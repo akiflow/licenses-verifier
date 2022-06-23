@@ -1,18 +1,9 @@
 import { readFileSync, existsSync, writeFileSync, unlinkSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { FsHelpers } from './FsHelpers'
-import { getLicensesWithLicensesChecker } from './input/getLicensesWithLicensesChecker'
-
-const insterfaceAsString = `export interface IAppPackages {
-  name: string
-  licenses: string
-  license: string
-  repository?: string
-  publisher?: string
-  email?: string
-  url?: string
-  notice?: string
-}\n\n`
+import { getLicensesWithLicensesChecker, ModuleInfo } from './input/getLicensesWithLicensesChecker'
+import { IPackagesByLicense, LicensesData } from './output/LicensesData'
+import { ILicensesTexts, LicensesFiles } from './output/LicensesFiles'
 
 export async function start (inputPath: string, outputPath: string) {
   console.log('[LicenseVerifier] - Building list of packages with licenses:')
@@ -21,11 +12,11 @@ export async function start (inputPath: string, outputPath: string) {
     console.log(`[LicenseVerifier] ❗No packages found in path ${inputPath}`)
     return
   }
-  const licenses: { [licenseAbbreviation: string]: string } = {}
-  const packagesByLicense: { [license: string]: Array<string>} = {}
+  const licenses: ILicensesTexts = {}
+  const packagesByLicense: IPackagesByLicense = {}
 
   let packagesWithLicense = 0
-  const pckagesArray = []
+  const pckagesArray: Array<ModuleInfo> = []
   for (const packageName in appPackages) {
     const packageData = appPackages[packageName]
     packageData.name = packageName
@@ -61,17 +52,6 @@ export async function start (inputPath: string, outputPath: string) {
     pckagesArray.push(packageData)
   }
   const numberOfPackages = pckagesArray.length
-  let packagesText = JSON.stringify(pckagesArray, null, 2)
-  // replace "licenses":  with licenses:
-  packagesText = packagesText.replace(/"name": /g, 'name: ')
-  packagesText = packagesText.replace(/"licenses": /g, 'licenses: ')
-  packagesText = packagesText.replace(/"repository": /g, 'repository: ')
-  packagesText = packagesText.replace(/"publisher": /g, 'publisher: ')
-  packagesText = packagesText.replace(/"url": /g, 'url: ')
-  packagesText = packagesText.replace(/"email": /g, 'email: ')
-  packagesText = packagesText.replace(/"license": /g, 'license: ')
-  packagesText = packagesText.replace(/"notice": /g, 'notice: ')
-  const appPackagesTs = `/* eslint-disable */\n\n/** Auto generated file - DO NOT EDIT */\n\n${insterfaceAsString}export const APP_PACKAGES: Array<IAppPackages> = ${packagesText}\n`
   
   if (numberOfPackages === packagesWithLicense) {
     console.log(`  ✔ All ${numberOfPackages} packages have a license, all is good.`)
@@ -79,21 +59,12 @@ export async function start (inputPath: string, outputPath: string) {
     console.log(`  ‼ ${numberOfPackages - packagesWithLicense} packages do not have a license, please check the output.`)
   }
 
-  FsHelpers.createDirIfNotExists(outputPath)
+  new LicensesData().exportLicensesData(pckagesArray, outputPath)
   
-  // Creates TS data file file
-  writeFileSync(join(outputPath, 'licensesData.ts'), appPackagesTs)
-  
-  for (const license in licenses) {
-    const licenseText = licenses[license]
-    const licenseFileName = `${license.replace(/\//g, '_').replace('*', '_alt')}.txt`
-    const licensesDir = join(outputPath, 'licenses')
-    FsHelpers.createDirIfNotExists(licensesDir)
-    writeFileSync(join(licensesDir, licenseFileName), licenseText)
-  }
+  LicensesFiles.saveLicencesToFile(licenses, outputPath)
 
-  const packagesByLicenseJson = JSON.stringify(packagesByLicense, null, 2)
-  writeFileSync(join(outputPath, 'packagesByLicense.json'), packagesByLicenseJson)
+  LicensesData.saveToJson(packagesByLicense, outputPath)
+  
 }
 
 start('./', './output-licenses-verifier')

@@ -1,16 +1,19 @@
 import * as checker from 'license-checker'
  
 
-interface ModuleInfos {
-  [packageName: string]: {
-    name: string
-    licenses: string
-    license: string
-    notice?: string
-    licenseFile?: string
-    path?: string
-  }
+export interface ModuleInfos {
+  [packageName: string]: ModuleInfo
 }
+
+export interface ModuleInfo {
+  name: string
+  licenses: string
+  license: string
+  notice?: string
+  licenseFile?: string
+  path?: string
+}
+
 
 export function getLicensesWithLicensesChecker(path: string): Promise<ModuleInfos | null> {
   return new Promise((resolve, reject) => {
