@@ -1,5 +1,5 @@
 import { FsHelpers } from '../FsHelpers'
-import { ModuleInfo } from '../input/getLicensesWithLicensesChecker'
+import { IModuleInfo } from '../input/getLicensesWithLicensesChecker'
 
 export interface IPackagesByLicense {
   [license: string]: Array<string>
@@ -26,7 +26,7 @@ export class LicensesData {
   private packagesText: string = ''
   private allPackagesKeys: Array<string> = []
 
-  public exportLicensesData(pckagesArray: Array<ModuleInfo>, outputPath: string): void {
+  public exportLicensesData(pckagesArray: Array<IModuleInfo>, outputPath: string): void {
     this.packagesText = JSON.stringify(pckagesArray, null, 2)
     this.getAllPackagesKeys(pckagesArray)
     this.allPackagesKeys.forEach(key => {
@@ -36,7 +36,7 @@ export class LicensesData {
     FsHelpers.writeFileSyncInDir(outputPath, 'licensesData.ts', appPackagesTs)
   }
 
-  private getAllPackagesKeys(pckagesArray: Array<ModuleInfo>): void {
+  private getAllPackagesKeys(pckagesArray: Array<IModuleInfo>): void {
     for (const packageData of pckagesArray) {
       Object.keys(packageData).forEach(key => {
         if (!this.allPackagesKeys.includes(key)) {

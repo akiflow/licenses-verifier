@@ -1,7 +1,7 @@
 import { readFileSync, existsSync, writeFileSync, unlinkSync, mkdirSync } from 'fs'
 import { join } from 'path'
 import { FsHelpers } from './FsHelpers'
-import { getLicensesWithLicensesChecker, ModuleInfo } from './input/getLicensesWithLicensesChecker'
+import { getLicensesWithLicensesChecker, IModuleInfo } from './input/getLicensesWithLicensesChecker'
 import { IPackagesByLicense, LicensesData } from './output/LicensesData'
 import { ILicensesTexts, LicensesFiles } from './output/LicensesFiles'
 
@@ -16,7 +16,7 @@ export async function start (inputPath: string, outputPath: string) {
   const packagesByLicense: IPackagesByLicense = {}
 
   let packagesWithLicense = 0
-  const pckagesArray: Array<ModuleInfo> = []
+  const pckagesArray: Array<IModuleInfo> = []
   for (const packageName in appPackages) {
     const packageData = appPackages[packageName]
     packageData.name = packageName

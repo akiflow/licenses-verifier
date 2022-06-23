@@ -1,11 +1,11 @@
 import * as checker from 'license-checker'
  
 
-export interface ModuleInfos {
-  [packageName: string]: ModuleInfo
+export interface IModuleInfos {
+  [packageName: string]: IModuleInfo
 }
 
-export interface ModuleInfo {
+export interface IModuleInfo {
   name: string
   licenses: string
   license: string
@@ -15,7 +15,7 @@ export interface ModuleInfo {
 }
 
 
-export function getLicensesWithLicensesChecker(path: string): Promise<ModuleInfos | null> {
+export function getLicensesWithLicensesChecker(path: string): Promise<IModuleInfos | null> {
   return new Promise((resolve, reject) => {
     checker.init({
       start: path
@@ -26,7 +26,7 @@ export function getLicensesWithLicensesChecker(path: string): Promise<ModuleInfo
         }
         reject(err)
       } else {
-        resolve(packages as unknown as ModuleInfos)
+        resolve(packages as unknown as IModuleInfos)
       }
     })
   })
