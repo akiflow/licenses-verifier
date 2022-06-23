@@ -4,7 +4,7 @@
     "allowSyntheticDefaultImports": true,
     "moduleResolution": "Node",
     "esModuleInterop": false,
-    "baseUrl": "./src/",
+    "rootDir": "./src/",
     "outDir": "./dist/",
     "strict": true
   },
