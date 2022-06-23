@@ -1,0 +1,9 @@
+{
+  "name": "licenses-verifier",
+  "version": "1.0.0",
+  "description": "Verify that the dependencies of package.json are licensed in a way that allows their use in the current project",
+  "main": "dist/index.js",
+  "repository": "https://github.com/akiflow/licenses-verifier.git",
+  "author": "Don <4340360+ilDon@users.noreply.github.com>",
+  "license": "MIT"
+}
