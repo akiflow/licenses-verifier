@@ -12,13 +12,24 @@ Thanks to Licenses Verifier, you will save you time and money when, for example,
 
 ## How it works?
 
-Licenses Verifier checks that the dependencies in your package.json are licensed in a way that allows their use in the current project.
+Licenses Verifier checks that the dependencies in your `package.json` are licensed in a way that allows their use in the current project.
 
-This is done by first checking all the dependencies in your package.json and then checking the licenses of the dependencies. This includes both the development and production licenses, and all the licenses of the dependencies (recursively).
+This is done by first listing all the dependencies in your `package.json` and then retrieving the licenses of such dependencies. This includes both the development and production licenses, and all the their dependencies (recursively).
 
 These licenses are then checked against the whitelist of licenses that are allowed in the current project. To whitelist a license, add it to the `whitelistedLicenses` array in the `package.json` file of the project.
 
+Example:
+
+    "whitelistedLicenses": [
+        "MIT",
+        "Apache-2.0"
+    ]
+
 If a dependency is not whitelisted, it will be reported as a problem.
+
+If no whitelist is provided, a warning will be shown.
+
+If any dependency has no license, it will be reported as a problem.
 
 ## How to use it?
 

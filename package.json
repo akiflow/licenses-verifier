@@ -1,20 +1,27 @@
 {
   "name": "licenses-verifier",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Verify that the dependencies of package.json are licensed in a way that allows their use in the current project",
-  "main": "dist/index.js",
   "repository": "https://github.com/akiflow/licenses-verifier.git",
   "author": "Don <4340360+ilDon@users.noreply.github.com>",
+  "engines": {
+    "node": ">=12.0.0"
+  },
+  "main": "./index.js",
+  "bin": {
+    "licenses-verifier": "./bin.js"
+  },
   "scripts": {
     "eslint": "eslint \"src/**/*.?(js|ts)\" --fix",
     "watch": "tsc --watch",
-    "build": "tsc",
+    "copy-pkg-files": "ts-node npm-package-files-copier.class.ts",
+    "build": "tsc && yarn copy-pkg-files",
+    "publishToNpm": "yarn build && cd dist && npm publish",
     "test": "node dist/index.js",
     "test0": "node dist/index.js --projectPath=../",
     "test1": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-a/licensesData.ts",
     "test2": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-b/sub-1/licensesData.js --outLicensesDir=./output-licenses-verifier",
     "test3": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/licensesData.js --outLicensesDir=./output-licenses-verifier/subfolder-c/sub-2/ --json=./output-licenses-verifier/subfolder-d/packagesByLicense.json"
-
   },
   "license": "MIT",
   "whitelistedLicenses": [
@@ -45,10 +52,20 @@
     "eslint-plugin-react": "^7.30.1",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-standard": "^5.0.0",
+    "ts-node": "^10.9.1",
     "typescript": "^4.7.4"
   },
   "dependencies": {
     "license-checker": "^25.0.1",
     "yargs": "^17.5.1"
-  }
+  },
+  "keywords": [
+    "licenses",
+    "compliance",
+    "verifier",
+    "legal",
+    "copyright",
+    "IP",
+    "intellectual property"
+  ]
 }
