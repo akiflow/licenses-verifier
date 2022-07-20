@@ -1,20 +1,17 @@
 import { readFileSync, existsSync } from 'fs'
+import { join } from 'path'
+import { argsParser, ILicensesVerifierCliOptions } from './input/argsParser'
 import { getLicensesWithLicensesChecker, IModuleInfo } from './input/getLicensesWithLicensesChecker'
 import { ILicensesTexts, IPackagesByLicense, LicensesData } from './output/LicensesData'
 import { Verifier } from './output/Verifier'
 
-interface IStartProps {
-  inputPath: string
-  outputTsOrJsFile?: string
-  outLicensesDir?: string
-  outputJsonFile?: string
-}
-
-export async function start ({ inputPath, outputTsOrJsFile, outLicensesDir, outputJsonFile }: IStartProps): Promise<void> {
-  console.log('[LicenseVerifier] - Building list of packages with licenses:')
-  const appPackages = await getLicensesWithLicensesChecker(inputPath)
+export async function start ({ projectPath, outputTsOrJsFile, outLicensesDir, outputJsonFile }: ILicensesVerifierCliOptions): Promise<void> {
+  const projectFullPath = join(process.cwd(), projectPath)
+  console.log(`\n[LicenseVerifier] - Analyzing project in directory ${projectFullPath}\n`)
+  const appPackages = await getLicensesWithLicensesChecker(projectPath)
   if (appPackages === null) {
-    console.log(`[LicenseVerifier] ❗No packages found in path ${inputPath}`)
+    console.log(`[LicenseVerifier] ❗ No packages found in directory ${projectFullPath}.`)
+    console.log('                     Try to pass a different directory with the arg \'--projectPath=[pathToDirectorry]\'.\n')
     return
   }
   const licenses: ILicensesTexts = {}
@@ -57,7 +54,7 @@ export async function start ({ inputPath, outputTsOrJsFile, outLicensesDir, outp
     pckagesArray.push(packageData)
   }
 
-  const verifier = new Verifier(inputPath, pckagesArray, !!outLicensesDir, !!outputJsonFile)
+  const verifier = new Verifier(projectPath, pckagesArray, !!outLicensesDir, !!outputJsonFile)
   verifier.allPackagesHaveLicense(packagesWithLicense)
   verifier.allLicensesAreWithelistedInPackageDotJson()
 
@@ -74,9 +71,6 @@ export async function start ({ inputPath, outputTsOrJsFile, outLicensesDir, outp
   }
 }
 
-start({
-  inputPath: './',
-  outputTsOrJsFile: './output-licenses-verifier/drt/tytyh/des/licensesData.ts'
-  // outLicensesDir: './output-licenses-verifier',
-  // outputJsonFile: './output-licenses-verifier/packagesByLicense.json'
-})
+start(
+  argsParser()
+)

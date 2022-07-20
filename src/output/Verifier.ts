@@ -50,10 +50,10 @@ export class Verifier {
       console.log(`  ❗ ${this.nonWhitelistedLicensesFound.length} license${nonWhitelistedLicensesNumber === 1 ? ' is' : 's are'} not whitelisted in package.json.`)
       console.log(`  ❗ The non whitelisted licenses being used in this project are: "${this.nonWhitelistedLicensesFound.join('", "')}"`)
       if (!this.hasSetJsonPath) {
-        console.log('\n  ❗ To review what packages are using these licenses, pass the argument \'--json\' with the path where to generate the file.')
+        console.log('\n  ❗ To review what packages are using these licenses, pass the argument \'--json=[pathToDirectoryAndFileName]\'.')
       }
       if (!this.hasSetOutLicensesDir) {
-        console.log('  ❗ To export the licenses texts, pass the argument \'--outLicensesDir\' with the path where to generate the file.')
+        console.log('  ❗ To export the licenses texts, pass the argument \'--outLicensesDir=[pathToDirectory]\'.')
       }
       console.log('  ❗ We strongly suggest to review the licenses used in this project with the support of an attorney.')
     } else {

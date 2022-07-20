@@ -25,7 +25,7 @@ export class LicensesData {
   public static saveToJsonAllPackagesUsedGroupedByLicense (packagesByLicense: IPackagesByLicense, outputPathAndFileName: string): void {
     const { folder, filename } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
     const packagesByLicenseJson = JSON.stringify(packagesByLicense, null, 2)
-    FsHelpers.writeFileSyncInDir(folder, filename, packagesByLicenseJson)
+    FsHelpers.writeFileSyncInDir(folder, filename || 'licenses.json', packagesByLicenseJson)
   }
 
   public static saveAllLicencesToTxtFile (licenses: ILicensesTexts, outputPath: string): void {
@@ -42,7 +42,7 @@ export class LicensesData {
 
   public exportLicensesToTsOrJsFile (pckagesArray: Array<IModuleInfo>, outputPathAndFileName: string): void {
     const { folder, filename, extension } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
-    const isTsFile = extension.startsWith('ts')
+    const isTsFile = !!extension && extension.startsWith('ts')
     this.packagesText = JSON.stringify(pckagesArray, null, 2)
     this.getAllPackagesKeys(pckagesArray)
     this.allPackagesKeys.forEach(key => {
@@ -57,7 +57,7 @@ export class LicensesData {
       appPackagesTs += ': Array<IAppPackages>'
     }
     appPackagesTs += ` = ${this.packagesText}\n`
-    FsHelpers.writeFileSyncInDir(folder, filename, appPackagesTs)
+    FsHelpers.writeFileSyncInDir(folder, filename || 'licenses.js', appPackagesTs)
   }
 
   private getAllPackagesKeys (pckagesArray: Array<IModuleInfo>): void {
