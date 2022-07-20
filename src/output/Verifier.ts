@@ -27,7 +27,9 @@ export class Verifier {
     this.buildArrayOfLicensesUsedInProject()
     this.loadWhitelistedLicensesFromPackageDotJson()
     if (this.licensesInPackageDotJson === null) {
-      console.log('\n  ⚠ No \'licenses\' property found in package.json.\n  ⚠ Please add the \'whitelistedLicenses\' property to your package.json file to whitelist licenses.\n  ⚠ If you do not want to whitelist licenses, you can ignore this warning.\n')
+      console.log('\n  ⚠ No \'whitelistedLicenses\' property found in package.json.')
+      console.log('  ⚠ Please add the \'whitelistedLicenses\' property to your package.json file to whitelist licenses.')
+      console.log('  ⚠ If you do not want to whitelist licenses, you can ignore this warning.\n')
       return
     }
     this.checkIfAnyLicenseIsNotWhitelisted()
