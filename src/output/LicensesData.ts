@@ -1,8 +1,13 @@
+import { join } from 'path'
 import { FsHelpers } from '../FsHelpers'
 import { IModuleInfo } from '../input/getLicensesWithLicensesChecker'
 
 export interface IPackagesByLicense {
   [license: string]: Array<string>
+}
+
+export interface ILicensesTexts {
+  [licenseAbbreviation: string]: string
 }
 
 const insterfaceAsString = `export interface IAppPackages {
@@ -20,6 +25,15 @@ export class LicensesData {
   public static saveToJsonAllPackagesUsedGroupedByLicense (packagesByLicense: IPackagesByLicense, outputPath: string): void {
     const packagesByLicenseJson = JSON.stringify(packagesByLicense, null, 2)
     FsHelpers.writeFileSyncInDir(outputPath, 'packagesByLicense.json', packagesByLicenseJson)
+  }
+
+  public static saveAllLicencesToTxtFile (licenses: ILicensesTexts, outputPath: string): void {
+    for (const license in licenses) {
+      const licenseText = licenses[license]
+      const licenseFileName = `${license.replace(/\//g, '_').replace('*', '_alt')}.txt`
+      const licensesDir = join(outputPath, 'licenses')
+      FsHelpers.writeFileSyncInDir(licensesDir, licenseFileName, licenseText)
+    }
   }
 
   private packagesText: string = ''

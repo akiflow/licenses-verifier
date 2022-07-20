@@ -1,7 +1,6 @@
 import { readFileSync, existsSync } from 'fs'
 import { getLicensesWithLicensesChecker, IModuleInfo } from './input/getLicensesWithLicensesChecker'
-import { IPackagesByLicense, LicensesData } from './output/LicensesData'
-import { ILicensesTexts, LicensesFiles } from './output/LicensesFiles'
+import { ILicensesTexts, IPackagesByLicense, LicensesData } from './output/LicensesData'
 import { Verifier } from './output/Verifier'
 
 export async function start (inputPath: string, outputPath: string) {
@@ -57,7 +56,7 @@ export async function start (inputPath: string, outputPath: string) {
 
   new LicensesData().exportLicensesToTsOrJsFile(pckagesArray, `${outputPath}/licensesData.ts`)
 
-  LicensesFiles.saveAllLicencesToTxtFile(licenses, outputPath)
+  LicensesData.saveAllLicencesToTxtFile(licenses, outputPath)
 
   LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, outputPath)
 }
