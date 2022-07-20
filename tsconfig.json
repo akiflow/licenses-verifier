@@ -3,6 +3,7 @@
     "target": "es5",
     "skipLibCheck": true,
     "allowSyntheticDefaultImports": true,
+    "noImplicitAny": true,
     "moduleResolution": "Node",
     "esModuleInterop": false,
     "rootDir": "./src/",

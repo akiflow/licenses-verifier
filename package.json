@@ -12,6 +12,19 @@
     "test": "node dist/index.js"
   },
   "license": "MIT",
+  "whitelistedLicenses": [
+    "MIT", 
+    "Apache-2.0",
+    "BSD-3-Clause",
+    "BSD-2-Clause",
+    "ISC",
+    "Python-2.0",
+    "CC-BY-3.0",
+    "CC0-1.0",
+    "(MIT AND CC-BY-3.0)",
+    "0BSD",
+    "(MIT OR CC0-1.0)"
+  ],
   "devDependencies": {
     "@types/license-checker": "^25.0.3",
     "@types/node": "^18.0.0",

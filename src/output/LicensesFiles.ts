@@ -6,7 +6,7 @@ export interface ILicensesTexts {
 }
 
 export class LicensesFiles {
-  public static saveLicencesToFile (licenses: ILicensesTexts, outputPath: string): void {
+  public static saveAllLicencesToTxtFile (licenses: ILicensesTexts, outputPath: string): void {
     for (const license in licenses) {
       const licenseText = licenses[license]
       const licenseFileName = `${license.replace(/\//g, '_').replace('*', '_alt')}.txt`

@@ -2,6 +2,7 @@ import { readFileSync, existsSync } from 'fs'
 import { getLicensesWithLicensesChecker, IModuleInfo } from './input/getLicensesWithLicensesChecker'
 import { IPackagesByLicense, LicensesData } from './output/LicensesData'
 import { ILicensesTexts, LicensesFiles } from './output/LicensesFiles'
+import { Verifier } from './output/Verifier'
 
 export async function start (inputPath: string, outputPath: string) {
   console.log('[LicenseVerifier] - Building list of packages with licenses:')
@@ -40,28 +41,25 @@ export async function start (inputPath: string, outputPath: string) {
     } else {
       if (licenses[packageData.licenses]) {
         packageData.license = licenses[packageData.licenses]
-        console.log(`  ❗ No license file for package: ${packageName}. Using license from other package: ${packageData.licenses}`)
+        console.log(`  ⚠ No license file for package: ${packageName}. Using license from other package: ${packageData.licenses}`)
         packagesWithLicense++
       } else {
-        console.log(`  ‼ No license file for package: ${packageName}. No license found for this package. ‼`)
+        console.log(`  ❗ No license file for package: ${packageName}. No license found for this package. ‼`)
       }
     }
     delete packageData.path
     pckagesArray.push(packageData)
   }
-  const numberOfPackages = pckagesArray.length
 
-  if (numberOfPackages === packagesWithLicense) {
-    console.log(`  ✔ All ${numberOfPackages} packages have a license, all is good.`)
-  } else {
-    console.log(`  ‼ ${numberOfPackages - packagesWithLicense} packages do not have a license, please check the output.`)
-  }
+  const verifier = new Verifier(inputPath, pckagesArray)
+  verifier.allPackagesHaveLicense(packagesWithLicense)
+  verifier.allLicensesAreWithelistedInPackageDotJson()
 
-  new LicensesData().exportLicensesData(pckagesArray, outputPath)
+  new LicensesData().exportLicensesToTsOrJsFile(pckagesArray, `${outputPath}/licensesData.ts`)
 
-  LicensesFiles.saveLicencesToFile(licenses, outputPath)
+  LicensesFiles.saveAllLicencesToTxtFile(licenses, outputPath)
 
-  LicensesData.saveToJson(packagesByLicense, outputPath)
+  LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, outputPath)
 }
 
 start('./', './output-licenses-verifier')

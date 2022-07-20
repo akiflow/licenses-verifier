@@ -17,7 +17,7 @@ const insterfaceAsString = `export interface IAppPackages {
 }\n\n`
 
 export class LicensesData {
-  public static saveToJson (packagesByLicense: IPackagesByLicense, outputPath: string): void {
+  public static saveToJsonAllPackagesUsedGroupedByLicense (packagesByLicense: IPackagesByLicense, outputPath: string): void {
     const packagesByLicenseJson = JSON.stringify(packagesByLicense, null, 2)
     FsHelpers.writeFileSyncInDir(outputPath, 'packagesByLicense.json', packagesByLicenseJson)
   }
@@ -25,14 +25,26 @@ export class LicensesData {
   private packagesText: string = ''
   private allPackagesKeys: Array<string> = []
 
-  public exportLicensesData (pckagesArray: Array<IModuleInfo>, outputPath: string): void {
+  public exportLicensesToTsOrJsFile (pckagesArray: Array<IModuleInfo>, outputPathAndFileName: string): void {
+    const outputPath = outputPathAndFileName.substring(0, outputPathAndFileName.lastIndexOf('/'))
+    const outputFileName = outputPathAndFileName.substring(outputPathAndFileName.lastIndexOf('/') + 1)
+    const outputFileExtension = outputFileName.substring(outputFileName.lastIndexOf('.') + 1)
+    const isTsFile = outputFileExtension.startsWith('ts')
     this.packagesText = JSON.stringify(pckagesArray, null, 2)
     this.getAllPackagesKeys(pckagesArray)
     this.allPackagesKeys.forEach(key => {
       this.replaceByRegex(new RegExp(`"${key}": `, 'g'), `${key}: `)
     })
-    const appPackagesTs = `/* eslint-disable */\n\n/** Auto generated file - DO NOT EDIT */\n\n${insterfaceAsString}export const APP_PACKAGES: Array<IAppPackages> = ${this.packagesText}\n`
-    FsHelpers.writeFileSyncInDir(outputPath, 'licensesData.ts', appPackagesTs)
+    let appPackagesTs = '/* eslint-disable */\n\n/** Auto generated file - DO NOT EDIT */\n\n'
+    if (isTsFile) {
+      appPackagesTs += insterfaceAsString
+    }
+    appPackagesTs += 'export const APP_PACKAGES'
+    if (isTsFile) {
+      appPackagesTs += ': Array<IAppPackages>'
+    }
+    appPackagesTs += ` = ${this.packagesText}\n`
+    FsHelpers.writeFileSyncInDir(outputPath, outputFileName, appPackagesTs)
   }
 
   private getAllPackagesKeys (pckagesArray: Array<IModuleInfo>): void {
