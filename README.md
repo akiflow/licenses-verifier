@@ -31,6 +31,14 @@ If no whitelist is provided, a warning will be shown.
 
 If any dependency has no license, it will be reported as a problem.
 
+### Which licenses can I whitelist?
+
+Short answer: ask your lawyers.
+
+Longer answer: you need to verify that the license allows you to use the dependency in your specific project. Many very common licenses, although referred as “open source”, do have specific requirements for use in other projects. Verifying how to comply with those requirements is a matter that should be addressed by a qualified attorney. For this reason, Licenses Verifier does not include any pre-populated license whitelist. Each project may or may not whitelist a license, depending on the project’s characteristics.
+
+For this reason we recommend that you consult with your lawyer before whitelisting a license. You should do so for each project you work on. We strongly suggest not to reuse the same license whitelist in multiple projects without prior consultation with your lawyer.
+
 ## How to use it?
 
 ### Installation
