@@ -67,6 +67,4 @@ All parameters are optional.
 
 ## Disclaimer
 
-This tool is intended as a tool to help you to verify that you have the right licenses for all the dependencies in your project. It is not intended, and should not be used, as a way to avoid proper legal due diligence.
-
-You remain responsible for the use of the licenses that you have verified. This tool is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+This tool is not intended, and should not be used, as a way to avoid proper legal due diligence. You remain the sole responsible for the use of the packages listed in your dependencies. This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
