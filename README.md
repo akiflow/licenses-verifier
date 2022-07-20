@@ -1,6 +1,6 @@
 # Licenses Verifier
 
-Verify that the dependencies of `package.json` are licensed in a way that allows their use in the current project
+Verify that the dependencies of `package.json` are licensed in a way that allows their use in a given project.
 
 ## Why?
 
@@ -8,15 +8,15 @@ Save on legal expenses by ensuring that you can lawfully use all the dependencie
 
 This will help you to ensure that you are not infringing any copyrights or other intellectual property rights.
 
-Thanks to Licenses Verifier, you will save you time and money when, for example, going through a legal due diligence. It will be easier to show that you have the right licenses for all the dependencies in your project by providing to your attorneys the information they need.
+Thanks to Licenses Verifier, you will save time and money when, for example, going through a legal due diligence. It will be easier to show that you have the right licenses for all the dependencies in your project by providing to your attorneys the information they need.
 
 ## How it works?
 
-Licenses Verifier checks that the dependencies in your `package.json` are licensed in a way that allows their use in the current project.
+Licenses Verifier checks that the dependencies in `package.json` are licensed in a way that allows their use in the current project.
 
-This is done by first listing all the dependencies in your `package.json` and then retrieving the licenses of such dependencies. This includes both the development and production licenses, and all the their dependencies (recursively).
+This is done by first listing all the dependencies in `package.json` and then retrieving the licenses of such dependencies. This includes both the development and production licenses, and all the their dependencies (recursively).
 
-These licenses are then checked against the whitelist of licenses that are allowed in the current project. To whitelist a license, add it to the `whitelistedLicenses` array in the `package.json` file of the project.
+These licenses are then checked against the whitelist of licenses that are allowed in the current project. To whitelist a license, add it to the `whitelistedLicenses` array in `package.json`.
 
 Example:
 
@@ -35,11 +35,11 @@ If any dependency has no license, it will be reported as a problem.
 
 ### Installation
 
-    npm install @akiflow/licenses-verifier --global
+    npm install -g @akiflow/licenses-verifier
 
 or
 
-    yarn add @akiflow/licenses-verifier --global
+    yarn global add @akiflow/licenses-verifier
 
 ### Usage
 
@@ -47,9 +47,9 @@ or
 
 or
 
-    yarn run licenses-verifier
+    yarn licenses-verifier
 
-### Options
+#### Options
 
 All parameters are optional.
 
@@ -67,4 +67,6 @@ All parameters are optional.
 
 ## Disclaimer
 
-This software is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
+This tool is intended as a tool to help you to verify that you have the right licenses for all the dependencies in your project. It is not intended, and should not be used, as a way to avoid proper legal due diligence.
+
+You remain responsible for the use of the licenses that you have verified. This tool is provided 'as-is', without any express or implied warranty. In no event will the authors be held liable for any damages arising from the use of this software.
