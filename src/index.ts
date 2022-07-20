@@ -3,7 +3,14 @@ import { getLicensesWithLicensesChecker, IModuleInfo } from './input/getLicenses
 import { ILicensesTexts, IPackagesByLicense, LicensesData } from './output/LicensesData'
 import { Verifier } from './output/Verifier'
 
-export async function start (inputPath: string, outputPath: string) {
+interface IStartProps {
+  inputPath: string
+  outputTsOrJsFile?: string
+  outLicensesDir?: string
+  outputJsonFile?: string
+}
+
+export async function start ({ inputPath, outputTsOrJsFile, outLicensesDir, outputJsonFile }: IStartProps): Promise<void> {
   console.log('[LicenseVerifier] - Building list of packages with licenses:')
   const appPackages = await getLicensesWithLicensesChecker(inputPath)
   if (appPackages === null) {
@@ -50,15 +57,26 @@ export async function start (inputPath: string, outputPath: string) {
     pckagesArray.push(packageData)
   }
 
-  const verifier = new Verifier(inputPath, pckagesArray)
+  const verifier = new Verifier(inputPath, pckagesArray, !!outLicensesDir, !!outputJsonFile)
   verifier.allPackagesHaveLicense(packagesWithLicense)
   verifier.allLicensesAreWithelistedInPackageDotJson()
 
-  new LicensesData().exportLicensesToTsOrJsFile(pckagesArray, `${outputPath}/licensesData.ts`)
+  if (outputTsOrJsFile) {
+    new LicensesData().exportLicensesToTsOrJsFile(pckagesArray, outputTsOrJsFile)
+  }
 
-  LicensesData.saveAllLicencesToTxtFile(licenses, outputPath)
+  if (outLicensesDir) {
+    LicensesData.saveAllLicencesToTxtFile(licenses, outLicensesDir)
+  }
 
-  LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, outputPath)
+  if (outputJsonFile) {
+    LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, outputJsonFile)
+  }
 }
 
-start('./', './output-licenses-verifier')
+start({
+  inputPath: './',
+  outputTsOrJsFile: './output-licenses-verifier/drt/tytyh/des/licensesData.ts'
+  // outLicensesDir: './output-licenses-verifier',
+  // outputJsonFile: './output-licenses-verifier/packagesByLicense.json'
+})

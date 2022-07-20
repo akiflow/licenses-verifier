@@ -22,9 +22,10 @@ const insterfaceAsString = `export interface IAppPackages {
 }\n\n`
 
 export class LicensesData {
-  public static saveToJsonAllPackagesUsedGroupedByLicense (packagesByLicense: IPackagesByLicense, outputPath: string): void {
+  public static saveToJsonAllPackagesUsedGroupedByLicense (packagesByLicense: IPackagesByLicense, outputPathAndFileName: string): void {
+    const { folder, filename } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
     const packagesByLicenseJson = JSON.stringify(packagesByLicense, null, 2)
-    FsHelpers.writeFileSyncInDir(outputPath, 'packagesByLicense.json', packagesByLicenseJson)
+    FsHelpers.writeFileSyncInDir(folder, filename, packagesByLicenseJson)
   }
 
   public static saveAllLicencesToTxtFile (licenses: ILicensesTexts, outputPath: string): void {
@@ -40,10 +41,8 @@ export class LicensesData {
   private allPackagesKeys: Array<string> = []
 
   public exportLicensesToTsOrJsFile (pckagesArray: Array<IModuleInfo>, outputPathAndFileName: string): void {
-    const outputPath = outputPathAndFileName.substring(0, outputPathAndFileName.lastIndexOf('/'))
-    const outputFileName = outputPathAndFileName.substring(outputPathAndFileName.lastIndexOf('/') + 1)
-    const outputFileExtension = outputFileName.substring(outputFileName.lastIndexOf('.') + 1)
-    const isTsFile = outputFileExtension.startsWith('ts')
+    const { folder, filename, extension } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
+    const isTsFile = extension.startsWith('ts')
     this.packagesText = JSON.stringify(pckagesArray, null, 2)
     this.getAllPackagesKeys(pckagesArray)
     this.allPackagesKeys.forEach(key => {
@@ -58,7 +57,7 @@ export class LicensesData {
       appPackagesTs += ': Array<IAppPackages>'
     }
     appPackagesTs += ` = ${this.packagesText}\n`
-    FsHelpers.writeFileSyncInDir(outputPath, outputFileName, appPackagesTs)
+    FsHelpers.writeFileSyncInDir(folder, filename, appPackagesTs)
   }
 
   private getAllPackagesKeys (pckagesArray: Array<IModuleInfo>): void {
