@@ -17,8 +17,7 @@ const insterfaceAsString = `export interface IAppPackages {
 }\n\n`
 
 export class LicensesData {
-
-  public static saveToJson(packagesByLicense: IPackagesByLicense, outputPath: string): void {
+  public static saveToJson (packagesByLicense: IPackagesByLicense, outputPath: string): void {
     const packagesByLicenseJson = JSON.stringify(packagesByLicense, null, 2)
     FsHelpers.writeFileSyncInDir(outputPath, 'packagesByLicense.json', packagesByLicenseJson)
   }
@@ -26,17 +25,17 @@ export class LicensesData {
   private packagesText: string = ''
   private allPackagesKeys: Array<string> = []
 
-  public exportLicensesData(pckagesArray: Array<IModuleInfo>, outputPath: string): void {
+  public exportLicensesData (pckagesArray: Array<IModuleInfo>, outputPath: string): void {
     this.packagesText = JSON.stringify(pckagesArray, null, 2)
     this.getAllPackagesKeys(pckagesArray)
     this.allPackagesKeys.forEach(key => {
       this.replaceByRegex(new RegExp(`"${key}": `, 'g'), `${key}: `)
-    })  
+    })
     const appPackagesTs = `/* eslint-disable */\n\n/** Auto generated file - DO NOT EDIT */\n\n${insterfaceAsString}export const APP_PACKAGES: Array<IAppPackages> = ${this.packagesText}\n`
     FsHelpers.writeFileSyncInDir(outputPath, 'licensesData.ts', appPackagesTs)
   }
 
-  private getAllPackagesKeys(pckagesArray: Array<IModuleInfo>): void {
+  private getAllPackagesKeys (pckagesArray: Array<IModuleInfo>): void {
     for (const packageData of pckagesArray) {
       Object.keys(packageData).forEach(key => {
         if (!this.allPackagesKeys.includes(key)) {
@@ -46,8 +45,7 @@ export class LicensesData {
     }
   }
 
-  private replaceByRegex(regex: RegExp, replacement: string): void {
+  private replaceByRegex (regex: RegExp, replacement: string): void {
     this.packagesText = this.packagesText.replace(regex, replacement)
   }
-
 }

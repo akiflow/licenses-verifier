@@ -1,6 +1,4 @@
-import { readFileSync, existsSync, writeFileSync, unlinkSync, mkdirSync } from 'fs'
-import { join } from 'path'
-import { FsHelpers } from './FsHelpers'
+import { readFileSync, existsSync } from 'fs'
 import { getLicensesWithLicensesChecker, IModuleInfo } from './input/getLicensesWithLicensesChecker'
 import { IPackagesByLicense, LicensesData } from './output/LicensesData'
 import { ILicensesTexts, LicensesFiles } from './output/LicensesFiles'
@@ -52,7 +50,7 @@ export async function start (inputPath: string, outputPath: string) {
     pckagesArray.push(packageData)
   }
   const numberOfPackages = pckagesArray.length
-  
+
   if (numberOfPackages === packagesWithLicense) {
     console.log(`  ✔ All ${numberOfPackages} packages have a license, all is good.`)
   } else {
@@ -60,11 +58,10 @@ export async function start (inputPath: string, outputPath: string) {
   }
 
   new LicensesData().exportLicensesData(pckagesArray, outputPath)
-  
+
   LicensesFiles.saveLicencesToFile(licenses, outputPath)
 
   LicensesData.saveToJson(packagesByLicense, outputPath)
-  
 }
 
 start('./', './output-licenses-verifier')

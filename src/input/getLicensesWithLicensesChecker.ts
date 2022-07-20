@@ -1,5 +1,4 @@
 import * as checker from 'license-checker'
- 
 
 export interface IModuleInfos {
   [packageName: string]: IModuleInfo
@@ -14,8 +13,7 @@ export interface IModuleInfo {
   path?: string
 }
 
-
-export function getLicensesWithLicensesChecker(path: string): Promise<IModuleInfos | null> {
+export function getLicensesWithLicensesChecker (path: string): Promise<IModuleInfos | null> {
   return new Promise((resolve, reject) => {
     checker.init({
       start: path

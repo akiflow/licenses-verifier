@@ -6,6 +6,7 @@
   "repository": "https://github.com/akiflow/licenses-verifier.git",
   "author": "Don <4340360+ilDon@users.noreply.github.com>",
   "scripts": {
+    "eslint": "eslint \"src/**/*.?(js|ts)\" --fix",
     "watch": "tsc --watch",
     "build": "tsc",
     "test": "node dist/index.js"
@@ -14,6 +15,17 @@
   "devDependencies": {
     "@types/license-checker": "^25.0.3",
     "@types/node": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^5.30.7",
+    "@typescript-eslint/parser": "^5.30.7",
+    "eslint": "^8.20.0",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-import": "^2.26.0",
+    "eslint-plugin-n": "^15.2.4",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-react": "^7.30.1",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-standard": "^5.0.0",
     "typescript": "^4.7.4"
   },
   "dependencies": {
