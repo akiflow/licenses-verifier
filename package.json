@@ -16,7 +16,7 @@
     "watch": "tsc --watch",
     "copy-pkg-files": "ts-node npm-package-files-copier.class.ts",
     "build": "tsc && yarn copy-pkg-files",
-    "publishToNpm": "yarn build && cd dist && npm publish",
+    "publishToNpm": "yarn build && cd dist && npm publish --public",
     "test": "node dist/index.js",
     "test0": "node dist/index.js --projectPath=../",
     "test1": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-a/licensesData.ts",
