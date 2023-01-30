@@ -1,6 +1,6 @@
 {
-  "name": "licenses-verifier",
-  "version": "1.0.1",
+  "name": "@akiflow/licenses-verifier",
+  "version": "1.0.2",
   "description": "Verify that the dependencies of package.json are licensed in a way that allows their use in the current project",
   "repository": "https://github.com/akiflow/licenses-verifier.git",
   "author": "Don <4340360+ilDon@users.noreply.github.com>",
@@ -16,7 +16,7 @@
     "watch": "tsc --watch",
     "copy-pkg-files": "ts-node npm-package-files-copier.class.ts",
     "build": "tsc && yarn copy-pkg-files",
-    "publishToNpm": "yarn build && cd dist && npm publish",
+    "publishToNpm": "yarn build && cd dist && npm publish --access public",
     "test": "node dist/index.js",
     "test0": "node dist/index.js --projectPath=../",
     "test1": "node dist/index.js --production",
