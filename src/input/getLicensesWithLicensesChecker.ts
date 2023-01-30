@@ -1,4 +1,5 @@
 import * as checker from 'license-checker'
+import { ILicensesVerifierCliOptions } from './argsParser'
 
 export interface IModuleInfos {
   [packageName: string]: IModuleInfo
@@ -13,10 +14,12 @@ export interface IModuleInfo {
   path?: string
 }
 
-export function getLicensesWithLicensesChecker (path: string): Promise<IModuleInfos | null> {
+export function getLicensesWithLicensesChecker (args: ILicensesVerifierCliOptions): Promise<IModuleInfos | null> {
   return new Promise((resolve, reject) => {
     checker.init({
-      start: path
+      start: args.projectPath,
+      production: args.production,
+      development: args.development
     }, function (err: Error, packages) {
       if (err) {
         if (err.message.includes('No packages found in this path')) {

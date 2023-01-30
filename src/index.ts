@@ -5,10 +5,10 @@ import { getLicensesWithLicensesChecker, IModuleInfo } from './input/getLicenses
 import { ILicensesTexts, IPackagesByLicense, LicensesData } from './output/LicensesData'
 import { Verifier } from './output/Verifier'
 
-export async function start ({ projectPath, outputTsOrJsFile, outLicensesDir, outputJsonFile }: ILicensesVerifierCliOptions): Promise<void> {
-  const projectFullPath = join(process.cwd(), projectPath)
+export async function start (args: ILicensesVerifierCliOptions): Promise<void> {
+  const projectFullPath = join(process.cwd(), args.projectPath)
   console.log(`\n[LicenseVerifier] - Analyzing project in directory ${projectFullPath}\n`)
-  const appPackages = await getLicensesWithLicensesChecker(projectPath)
+  const appPackages = await getLicensesWithLicensesChecker(args)
   if (appPackages === null) {
     console.log(`[LicenseVerifier] ❗ No packages found in directory ${projectFullPath}.`)
     console.log('                     Try to pass a different directory with the arg \'--projectPath=[pathToDirectorry]\'.\n')
@@ -54,20 +54,20 @@ export async function start ({ projectPath, outputTsOrJsFile, outLicensesDir, ou
     pckagesArray.push(packageData)
   }
 
-  const verifier = new Verifier(projectPath, pckagesArray, !!outLicensesDir, !!outputJsonFile)
+  const verifier = new Verifier(args.projectPath, pckagesArray, !!args.outLicensesDir, !!args.outputJsonFile)
   verifier.allPackagesHaveLicense(packagesWithLicense)
   verifier.allLicensesAreWithelistedInPackageDotJson()
 
-  if (outputTsOrJsFile) {
-    new LicensesData().exportLicensesToTsOrJsFile(pckagesArray, outputTsOrJsFile)
+  if (args.outputTsOrJsFile) {
+    new LicensesData().exportLicensesToTsOrJsFile(pckagesArray, args.outputTsOrJsFile)
   }
 
-  if (outLicensesDir) {
-    LicensesData.saveAllLicencesToTxtFile(licenses, outLicensesDir)
+  if (args.outLicensesDir) {
+    LicensesData.saveAllLicencesToTxtFile(licenses, args.outLicensesDir)
   }
 
-  if (outputJsonFile) {
-    LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, outputJsonFile)
+  if (args.outputJsonFile) {
+    LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, args.outputJsonFile)
   }
 }
 
