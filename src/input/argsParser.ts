@@ -17,7 +17,7 @@ export function argsParser (): ILicensesVerifierCliOptions {
   const outputTsOrJsFile = argv.tsOrJsFile
   const outLicensesDir = argv.outLicensesDir
   const outputJsonFile = argv.json
-  const production = argv.production
-  const development = argv.development
+  const production = !!argv.production || undefined
+  const development = !!argv.development || undefined
   return { projectPath, outputTsOrJsFile, outLicensesDir, outputJsonFile, production, development }
 }
