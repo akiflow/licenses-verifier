@@ -19,9 +19,11 @@
     "publishToNpm": "yarn build && cd dist && npm publish --access public",
     "test": "node dist/index.js",
     "test0": "node dist/index.js --projectPath=../",
-    "test1": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-a/licensesData.ts",
-    "test2": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-b/sub-1/licensesData.js --outLicensesDir=./output-licenses-verifier",
-    "test3": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/licensesData.js --outLicensesDir=./output-licenses-verifier/subfolder-c/sub-2/ --json=./output-licenses-verifier/subfolder-d/packagesByLicense.json"
+    "test1": "node dist/index.js --production",
+    "test2": "node dist/index.js --development",
+    "test3": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-a/licensesData.ts",
+    "test4": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-b/sub-1/licensesData.js --outLicensesDir=./output-licenses-verifier",
+    "test5": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/licensesData.js --outLicensesDir=./output-licenses-verifier/subfolder-c/sub-2/ --json=./output-licenses-verifier/subfolder-d/packagesByLicense.json"
   },
   "license": "MIT",
   "whitelistedLicenses": [

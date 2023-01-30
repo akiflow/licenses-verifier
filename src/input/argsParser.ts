@@ -8,6 +8,8 @@ export interface ILicensesVerifierCliOptions {
   outputTsOrJsFile?: string
   outLicensesDir?: string
   outputJsonFile?: string
+  production?: boolean
+  development?: boolean
 }
 
 export function argsParser (): ILicensesVerifierCliOptions {
@@ -15,5 +17,7 @@ export function argsParser (): ILicensesVerifierCliOptions {
   const outputTsOrJsFile = argv.tsOrJsFile
   const outLicensesDir = argv.outLicensesDir
   const outputJsonFile = argv.json
-  return { projectPath, outputTsOrJsFile, outLicensesDir, outputJsonFile }
+  const production = !!argv.production || undefined
+  const development = !!argv.development || undefined
+  return { projectPath, outputTsOrJsFile, outLicensesDir, outputJsonFile, production, development }
 }

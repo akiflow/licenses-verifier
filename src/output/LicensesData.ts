@@ -19,6 +19,7 @@ const insterfaceAsString = `export interface IAppPackages {
   email?: string
   url?: string
   notice?: string
+  noticeFile?: string
 }\n\n`
 
 export class LicensesData {
