@@ -1,3 +1,3 @@
 #!/usr/bin/env node
 
-const start = require('./index')
+const start = require('./dist/index')
