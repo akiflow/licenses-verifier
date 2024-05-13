@@ -19,7 +19,8 @@ export function getLicensesWithLicensesChecker (args: ILicensesVerifierCliOption
     checker.init({
       start: args.projectPath,
       production: args.production,
-      development: args.development
+      development: args.development,
+      excludePrivatePackages: args.excludePrivatePackages
     }, function (err: Error, packages) {
       if (err) {
         if (err.message.includes('No packages found in this path')) {

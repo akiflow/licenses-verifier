@@ -61,16 +61,28 @@ or
 
 All parameters are optional.
 
+    --excludePrivatePackages
+        Exclude from the output private packages
+
+    --packages=<comma separated list>
+        Limit the verification to the specified packages. The package names should be separated by commas. For example: --packages=package1,package2,package3
+
     --projectPath=<path>
         If not specified, the current directory will be used.
 
-    --tsOrJsFile=<pathAndFilename>
-        the path and name of the file in which all packages and licenses will be made available to be imported in your code. Useful to include links and other information about the dependencies used in your project.
+    --tsFile=<pathAndFilename>
+        the path and name of the TS file in which all packages and licenses will be made available to be imported in your code. Useful to include links and other information about the dependencies used in your project.
+    
+    --jsFile=<pathAndFilename>
+        same as --tsFile but exports to a JavaScript files.
+
+    --jsonFile=<pathAndFilename>
+        same as --tsFile but exports to a JSON file.
     
     --outLicensesDir=<directory>
         the directory in which the licenses will be saved. A separate file will be created for each license. Useful if you need to provide the licenses to a third party, for example, an attorney to help you review the licenses.
 
-    --outputJsonFile=<pathAndFilename>
+    --packagesByLicense=<pathAndFilename>
         the path and name of the file in which a list of all the packages used in the project, grouped by license, will be saved. Useful to identify which packages are using which licenses.
 
 ## Disclaimer

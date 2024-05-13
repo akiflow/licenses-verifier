@@ -5,19 +5,27 @@ const argv = yargs(hideBin(process.argv)).argv
 
 export interface ILicensesVerifierCliOptions {
   projectPath: string
-  outputTsOrJsFile?: string
-  outLicensesDir?: string
+  outputTsFile?: string
+  outputJsFile?: string
   outputJsonFile?: string
+  outLicensesDir?: string
+  packagesByLicense?: string
+  packages?: string
   production?: boolean
   development?: boolean
+  excludePrivatePackages?: boolean
 }
 
 export function argsParser (): ILicensesVerifierCliOptions {
   const projectPath = argv.projectPath || './'
-  const outputTsOrJsFile = argv.tsOrJsFile
+  const outputTsFile = argv.tsFile
+  const outputJsFile = argv.jsFile
+  const outputJsonFile = argv.jsonFile
   const outLicensesDir = argv.outLicensesDir
-  const outputJsonFile = argv.json
+  const packagesByLicense = argv.packagesByLicense
+  const packages = argv.packages
   const production = !!argv.production || undefined
   const development = !!argv.development || undefined
-  return { projectPath, outputTsOrJsFile, outLicensesDir, outputJsonFile, production, development }
+  const excludePrivatePackages = !!argv.excludePrivatePackages || undefined
+  return { projectPath, outputTsFile, outputJsFile, outputJsonFile, outLicensesDir, packagesByLicense, packages, production, development, excludePrivatePackages }
 }

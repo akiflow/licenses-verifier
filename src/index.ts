@@ -16,10 +16,16 @@ export async function start (args: ILicensesVerifierCliOptions): Promise<void> {
   }
   const licenses: ILicensesTexts = {}
   const packagesByLicense: IPackagesByLicense = {}
+  const separator = args.packages?.includes(',') ? ',' : ' '
+  const packagesToLimit = args.packages ? args.packages.split(separator) : null
 
   let packagesWithLicense = 0
   const pckagesArray: Array<IModuleInfo> = []
   for (const packageName in appPackages) {
+    const packageNameWithoutVersion = !packageName.startsWith('@') ? packageName.split('@')[0] : packageName.split('@').slice(0, -1).join('@')
+    if (packagesToLimit && !packagesToLimit.includes(packageNameWithoutVersion)) {
+      continue
+    }
     const packageData = appPackages[packageName]
     packageData.name = packageName
     const pathToLicense = packageData.licenseFile
@@ -58,16 +64,24 @@ export async function start (args: ILicensesVerifierCliOptions): Promise<void> {
   verifier.allPackagesHaveLicense(packagesWithLicense)
   verifier.allLicensesAreWithelistedInPackageDotJson()
 
-  if (args.outputTsOrJsFile) {
-    new LicensesData().exportLicensesToTsOrJsFile(pckagesArray, args.outputTsOrJsFile)
+  if (args.outputTsFile) {
+    new LicensesData().exportLicensesToFileOfExtension(pckagesArray, args.outputTsFile, 'ts')
+  }
+
+  if (args.outputJsFile) {
+    new LicensesData().exportLicensesToFileOfExtension(pckagesArray, args.outputJsFile, 'js')
+  }
+
+  if (args.outputJsonFile) {
+    new LicensesData().exportLicensesToFileOfExtension(pckagesArray, args.outputJsonFile, 'json')
   }
 
   if (args.outLicensesDir) {
     LicensesData.saveAllLicencesToTxtFile(licenses, args.outLicensesDir)
   }
 
-  if (args.outputJsonFile) {
-    LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, args.outputJsonFile)
+  if (args.packagesByLicense) {
+    LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, args.packagesByLicense)
   }
 }
 

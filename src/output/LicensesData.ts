@@ -20,6 +20,7 @@ const insterfaceAsString = `export interface IAppPackages {
   url?: string
   notice?: string
   noticeFile?: string
+  private?: boolean
 }\n\n`
 
 export class LicensesData {
@@ -41,10 +42,14 @@ export class LicensesData {
   private packagesText: string = ''
   private allPackagesKeys: Array<string> = []
 
-  public exportLicensesToTsOrJsFile (pckagesArray: Array<IModuleInfo>, outputPathAndFileName: string): void {
-    const { folder, filename, extension } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
+  public exportLicensesToFileOfExtension (pckagesArray: Array<IModuleInfo>, outputPathAndFileName: string, extension: 'js' | 'ts' | 'json'): void {
+    const { folder, filename } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
     const isTsFile = !!extension && extension.startsWith('ts')
     this.packagesText = JSON.stringify(pckagesArray, null, 2)
+    if (extension === 'json') {
+      FsHelpers.writeFileSyncInDir(folder, filename || 'licenses.json', this.packagesText)
+      return
+    }
     this.getAllPackagesKeys(pckagesArray)
     this.allPackagesKeys.forEach(key => {
       this.replaceByRegex(new RegExp(`"${key}": `, 'g'), `${key}: `)
