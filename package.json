@@ -32,7 +32,7 @@
     "verify-package": "node scripts/verify-package.js",
     "smoke-test": "node scripts/smoke-test.js",
     "self-check": "node scripts/clean.js && tsc -p tsconfig.build.json && node bin/licenses-verifier.js",
-    "publishToNpm": "npm publish --access public",
+    "publishToNpm": "npm publish --access public --registry https://registry.npmjs.org",
     "prepublishOnly": "node scripts/clean.js && tsc -p tsconfig.build.json && tsc --noEmit -p tsconfig.json && bun test --coverage && node scripts/verify-package.js && node scripts/smoke-test.js"
   },
   "whitelistedLicenses": [
@@ -64,5 +64,9 @@
     "intellectual property",
     "zero-dependencies",
     "sbom"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org"
+  }
 }
