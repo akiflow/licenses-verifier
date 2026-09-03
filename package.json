@@ -1,31 +1,40 @@
 {
   "name": "@akiflow/licenses-verifier",
-  "version": "2.0.1",
-  "description": "Verify that the dependencies of package.json are licensed in a way that allows their use in the current project",
+  "version": "3.0.0",
+  "description": "Verify that the dependencies of package.json are licensed in a way that allows their use in the current project. Zero dependencies.",
   "repository": "https://github.com/akiflow/licenses-verifier.git",
   "author": "Don <4340360+ilDon@users.noreply.github.com>",
-  "engines": {
-    "node": ">=12.0.0"
-  },
-  "main": "./index.js",
-  "bin": {
-    "licenses-verifier": "./bin.js"
-  },
-  "scripts": {
-    "eslint": "eslint \"src/**/*.?(js|ts)\" --fix",
-    "watch": "tsc --watch",
-    "copy-pkg-files": "ts-node npm-package-files-copier.class.ts",
-    "build": "tsc && yarn copy-pkg-files",
-    "publishToNpm": "yarn build && cd dist && npm publish --access public",
-    "test": "node dist/index.js",
-    "test0": "node dist/index.js --projectPath=../",
-    "test1": "node dist/index.js --production",
-    "test2": "node dist/index.js --development",
-    "test3": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-a/licensesData.ts",
-    "test4": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/subfolder-b/sub-1/licensesData.js --outLicensesDir=./output-licenses-verifier",
-    "test5": "node dist/index.js --tsOrJsFile=./output-licenses-verifier/licensesData.js --outLicensesDir=./output-licenses-verifier/subfolder-c/sub-2/ --json=./output-licenses-verifier/subfolder-d/packagesByLicense.json"
-  },
   "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "licenses-verifier": "./bin/licenses-verifier.js"
+  },
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "bin/licenses-verifier.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "clean": "node scripts/clean.js",
+    "build": "node scripts/clean.js && tsc",
+    "watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "test": "node scripts/clean.js && tsc && bun test",
+    "test:only": "bun test",
+    "test:watch": "bun test --watch",
+    "test:coverage": "bun test --coverage",
+    "verify-package": "node scripts/verify-package.js",
+    "smoke-test": "node scripts/smoke-test.js",
+    "self-check": "node scripts/clean.js && tsc && node bin/licenses-verifier.js",
+    "publishToNpm": "npm publish --access public",
+    "prepublishOnly": "node scripts/clean.js && tsc && bun test --coverage && node scripts/verify-package.js && node scripts/smoke-test.js"
+  },
   "whitelistedLicenses": [
     "MIT",
     "Apache-2.0",
@@ -37,32 +46,12 @@
     "CC0-1.0",
     "(MIT AND CC-BY-3.0)",
     "0BSD",
-    "(MIT OR CC0-1.0)"
+    "(MIT OR CC0-1.0)",
+    "BlueOak-1.0.0"
   ],
   "devDependencies": {
-    "@types/license-checker": "^25.0.6",
     "@types/node": "^20.11.5",
-    "@types/yargs": "^17.0.32",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
-    "eslint": "^8.56.0",
-    "eslint-config-standard": "^17.1.0",
-    "eslint-plugin-import": "^2.29.1",
-    "eslint-plugin-n": "^16.6.2",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^6.1.1",
-    "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "eslint-plugin-standard": "^5.0.0",
-    "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
-  },
-  "dependencies": {
-    "license-checker": "^25.0.1",
-    "yargs": "^17.7.2"
-  },
-  "resolutions": {
-    "minimatch": "10.2.4"
   },
   "keywords": [
     "licenses",
@@ -71,6 +60,8 @@
     "legal",
     "copyright",
     "IP",
-    "intellectual property"
+    "intellectual property",
+    "zero-dependencies",
+    "sbom"
   ]
 }

@@ -1,0 +1,20 @@
+[test]
+# Test files and their helpers are not part of the measured surface.
+coverageSkipTestFiles = true
+coveragePathIgnorePatterns = ["test/**"]
+
+# A floor, not a target: `bun test --coverage` fails below it, so coverage
+# cannot quietly rot.
+#
+# Two things about this setting are easy to get wrong:
+#  - the keys are plural. Bun silently ignores `{ line = ..., function = ... }`,
+#    which makes the guard look configured while never firing.
+#  - the thresholds are applied per file, not to the aggregate, so they have to
+#    be set to what the weakest file can meet.
+#
+# Lines sit at 100% everywhere except cli.ts, whose `require.main === module`
+# guard by design cannot run under a test that imports it. The function floor is
+# lower because each file holding a class reports one synthetic uncovered
+# function (the implicit constructor of a static-only class); writing tests to
+# instantiate those would move the number without testing anything.
+coverageThreshold = { lines = 0.97, functions = 0.83 }

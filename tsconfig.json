@@ -1,24 +1,30 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "skipLibCheck": true,
-    "allowSyntheticDefaultImports": true,
-    "noImplicitAny": true,
+    "target": "ES2019",
+    "lib": ["ES2019"],
+    "module": "commonjs",
     "moduleResolution": "Node",
-    "esModuleInterop": false,
     "rootDir": "./src/",
     "outDir": "./dist/",
-    "strict": true
+    "declaration": true,
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "types": ["node"]
   },
   "include": [
-    "src/**/*.ts",
-    "src/**/*.tsx"
+    "src/**/*.ts"
   ],
   "exclude": [
     "node_modules",
     "dist",
-    "build",
-    "static",
-    ".vscode"
+    "test"
   ]
 }

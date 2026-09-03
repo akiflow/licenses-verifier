@@ -1,16 +1,8 @@
 import { join } from 'path'
-import { FsHelpers } from '../FsHelpers'
-import { IModuleInfo } from '../input/getLicensesWithLicensesChecker'
+import { FsHelpers } from '../utils/fs'
+import { ILicensesTexts, IModuleInfo, IPackagesByLicense } from '../types'
 
-export interface IPackagesByLicense {
-  [license: string]: Array<string>
-}
-
-export interface ILicensesTexts {
-  [licenseAbbreviation: string]: string
-}
-
-const insterfaceAsString = `export interface IAppPackages {
+const INTERFACE_AS_STRING = `export interface IAppPackages {
   name: string
   licenses: string
   license: string
@@ -22,56 +14,79 @@ const insterfaceAsString = `export interface IAppPackages {
   noticeFile?: string
 }\n\n`
 
+/** Object keys that can be written unquoted in a JS/TS object literal. */
+const SAFE_IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/
+
 export class LicensesData {
-  public static saveToJsonAllPackagesUsedGroupedByLicense (packagesByLicense: IPackagesByLicense, outputPathAndFileName: string): void {
+  public static saveToJsonAllPackagesUsedGroupedByLicense (
+    packagesByLicense: IPackagesByLicense,
+    outputPathAndFileName: string
+  ): void {
     const { folder, filename } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
     const packagesByLicenseJson = JSON.stringify(packagesByLicense, null, 2)
-    FsHelpers.writeFileSyncInDir(folder, filename || 'licenses.json', packagesByLicenseJson)
+    FsHelpers.writeFileSyncInDir(folder, filename || 'licenses.json', `${packagesByLicenseJson}\n`)
   }
 
   public static saveAllLicencesToTxtFile (licenses: ILicensesTexts, outputPath: string): void {
+    const licensesDir = join(outputPath, 'licenses')
     for (const license in licenses) {
       const licenseText = licenses[license]
-      const licenseFileName = `${license.replace(/\//g, '_').replace('*', '_alt')}.txt`
-      const licensesDir = join(outputPath, 'licenses')
-      FsHelpers.writeFileSyncInDir(licensesDir, licenseFileName, licenseText)
+      if (!licenseText) {
+        continue
+      }
+      FsHelpers.writeFileSyncInDir(licensesDir, LicensesData.licenseToFileName(license), licenseText)
     }
   }
 
-  private packagesText: string = ''
-  private allPackagesKeys: Array<string> = []
+  /**
+   * Turns a license identifier into a file name that is valid on every
+   * supported platform. SPDX expressions contain characters that Windows
+   * rejects in file names (`/ \ : * ? " < > |`), so they are all replaced.
+   */
+  public static licenseToFileName (license: string): string {
+    const safe = license
+      .replace(/\*/g, '_alt')
+      .replace(/[/\\:?"<>|]/g, '_')
+      .replace(/\s+/g, '_')
+      .replace(/_+/g, '_')
+      .replace(/^_|_$/g, '')
+    return `${safe || 'UNKNOWN'}.txt`
+  }
 
-  public exportLicensesToTsOrJsFile (pckagesArray: Array<IModuleInfo>, outputPathAndFileName: string): void {
+  public exportLicensesToTsOrJsFile (packagesArray: Array<IModuleInfo>, outputPathAndFileName: string): void {
     const { folder, filename, extension } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
-    const isTsFile = !!extension && extension.startsWith('ts')
-    this.packagesText = JSON.stringify(pckagesArray, null, 2)
-    this.getAllPackagesKeys(pckagesArray)
-    this.allPackagesKeys.forEach(key => {
-      this.replaceByRegex(new RegExp(`"${key}": `, 'g'), `${key}: `)
+    const isTsFile = extension.startsWith('ts')
+
+    let content = '/* eslint-disable */\n\n/** Auto generated file - DO NOT EDIT */\n\n'
+    if (isTsFile) {
+      content += INTERFACE_AS_STRING
+    }
+    content += 'export const APP_PACKAGES'
+    if (isTsFile) {
+      content += ': Array<IAppPackages>'
+    }
+    content += ` = ${LicensesData.stringifyPackages(packagesArray)}\n`
+
+    FsHelpers.writeFileSyncInDir(folder, filename || 'licenses.js', content)
+  }
+
+  /**
+   * Serializes the packages as a JS object literal with unquoted keys.
+   *
+   * Built by walking the values rather than by running regexes over the JSON,
+   * so that a key name appearing inside a license text cannot be corrupted.
+   */
+  private static stringifyPackages (packagesArray: Array<IModuleInfo>): string {
+    const entries = packagesArray.map(packageData => {
+      const fields = Object.keys(packageData)
+        .filter(key => (packageData as unknown as Record<string, unknown>)[key] !== undefined)
+        .map(key => {
+          const value = (packageData as unknown as Record<string, unknown>)[key]
+          const safeKey = SAFE_IDENTIFIER.test(key) ? key : JSON.stringify(key)
+          return `    ${safeKey}: ${JSON.stringify(value)}`
+        })
+      return `  {\n${fields.join(',\n')}\n  }`
     })
-    let appPackagesTs = '/* eslint-disable */\n\n/** Auto generated file - DO NOT EDIT */\n\n'
-    if (isTsFile) {
-      appPackagesTs += insterfaceAsString
-    }
-    appPackagesTs += 'export const APP_PACKAGES'
-    if (isTsFile) {
-      appPackagesTs += ': Array<IAppPackages>'
-    }
-    appPackagesTs += ` = ${this.packagesText}\n`
-    FsHelpers.writeFileSyncInDir(folder, filename || 'licenses.js', appPackagesTs)
-  }
-
-  private getAllPackagesKeys (pckagesArray: Array<IModuleInfo>): void {
-    for (const packageData of pckagesArray) {
-      Object.keys(packageData).forEach(key => {
-        if (!this.allPackagesKeys.includes(key)) {
-          this.allPackagesKeys.push(key)
-        }
-      })
-    }
-  }
-
-  private replaceByRegex (regex: RegExp, replacement: string): void {
-    this.packagesText = this.packagesText.replace(regex, replacement)
+    return `[\n${entries.join(',\n')}\n]`
   }
 }

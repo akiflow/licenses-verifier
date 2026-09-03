@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / node ${{ matrix.node }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node: ['18', '20', '22']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      # The test suite runs on bun. The package itself ships to npm and runs on
+      # Node, which the end-to-end tests and the smoke test below both check.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      # Installs exactly what yarn.lock pins. The package has zero runtime
+      # dependencies, so this only installs typescript and @types/node.
+      - name: Install devDependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Typecheck
+        run: yarn typecheck
+
+      - name: Build
+        run: yarn build
+
+      - name: Test, with the coverage floor enforced
+        run: bun test --coverage
+
+      - name: Verify the package is publishable
+        run: yarn verify-package
+
+      # The bug that shipped a broken 2.0.1 to npm: the tarball had no
+      # runnable JS. Install the real tarball and run the real binary.
+      - name: Smoke test the packed tarball
+        run: node scripts/smoke-test.js
+
+  # `engines` claims Node 14, but the test suite needs `node:test` (Node 18+).
+  # This job verifies the claim by building and running the tool on the oldest
+  # supported versions, without the test suite.
+  legacy-node:
+    name: ${{ matrix.os }} / node ${{ matrix.node }} (build and run only)
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        node: ['14', '16']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install a modern Node to build with
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - run: yarn install --frozen-lockfile
+      - run: yarn build
+
+      - name: Switch to Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Run the built tool
+        run: node bin/licenses-verifier.js --projectPath=.
+
+      - name: Run the built tool with every output option
+        run: node bin/licenses-verifier.js --production --json=./out/byLicense.json --outLicensesDir=./out --tsOrJsFile=./out/licensesData.ts

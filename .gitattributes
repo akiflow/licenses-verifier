@@ -1,0 +1,4 @@
+* text=auto eol=lf
+
+# The shebang of the CLI entry point must not be preceded or followed by CRLF.
+bin/licenses-verifier.js text eol=lf

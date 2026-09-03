@@ -1,4 +1,7 @@
 node_modules/
 dist/
+*.tgz
 yarn-error.log
+npm-debug.log*
 output-licenses-verifier/
+.DS_Store

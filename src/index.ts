@@ -1,65 +1,77 @@
-import { readFileSync, existsSync } from 'fs'
-import { join } from 'path'
-import { argsParser, ILicensesVerifierCliOptions } from './input/argsParser'
-import { getLicensesWithLicensesChecker, IModuleInfo } from './input/getLicensesWithLicensesChecker'
-import { ILicensesTexts, IPackagesByLicense, LicensesData } from './output/LicensesData'
+import { resolve } from 'path'
+import { argsParser } from './input/argsParser'
+import { getLicenses } from './input/getLicenses'
+import { LicensesData } from './output/LicensesData'
 import { Verifier } from './output/Verifier'
+import {
+  ILicensesTexts,
+  ILicensesVerifierCliOptions,
+  IModuleInfo,
+  IPackagesByLicense,
+  IVerificationResult
+} from './types'
 
-export async function start (args: ILicensesVerifierCliOptions): Promise<void> {
-  const projectFullPath = join(process.cwd(), args.projectPath)
+/**
+ * Runs the verification. Resolves to null when no project was found at the
+ * given path, which the CLI reports as a hint to pass `--projectPath`.
+ */
+export function start (args: ILicensesVerifierCliOptions): IVerificationResult | null {
+  const projectFullPath = resolve(process.cwd(), args.projectPath)
   console.log(`\n[LicenseVerifier] - Analyzing project in directory ${projectFullPath}\n`)
-  const appPackages = await getLicensesWithLicensesChecker(args)
+
+  const appPackages = getLicenses(args)
   if (appPackages === null) {
     console.log(`[LicenseVerifier] ❗ No packages found in directory ${projectFullPath}.`)
-    console.log('                     Try to pass a different directory with the arg \'--projectPath=[pathToDirectorry]\'.\n')
-    return
+    console.log('                     Try to pass a different directory with the arg \'--projectPath=[pathToDirectory]\'.\n')
+    return null
   }
+
   const licenses: ILicensesTexts = {}
   const packagesByLicense: IPackagesByLicense = {}
+  const packagesArray: Array<IModuleInfo> = []
 
-  let packagesWithLicense = 0
-  const pckagesArray: Array<IModuleInfo> = []
+  // First pass: index every license text we could find, so that a package
+  // without its own license file can borrow the text of the same license from
+  // another package regardless of the order they are visited in.
   for (const packageName in appPackages) {
     const packageData = appPackages[packageName]
-    packageData.name = packageName
-    const pathToLicense = packageData.licenseFile
+    if (packageData.license && !licenses[packageData.licenses]) {
+      licenses[packageData.licenses] = packageData.license
+    }
+  }
+
+  const packagesWithoutLicense: Array<string> = []
+  for (const packageName in appPackages) {
+    const packageData = appPackages[packageName]
 
     if (!packagesByLicense[packageData.licenses]) {
       packagesByLicense[packageData.licenses] = []
     }
     packagesByLicense[packageData.licenses].push(packageData.name)
 
-    if (pathToLicense) {
-      const license = readFileSync(pathToLicense, 'utf8')
-      packageData.license = license
-      licenses[packageData.licenses] = license
-      delete packageData.licenseFile
-      // Some licenses require that also the NOTICE file is included
-      if (existsSync(packageData.path + '/NOTICE')) {
-        packageData.notice = readFileSync(packageData.path + '/NOTICE', 'utf8')
-      } else if (existsSync(packageData.path + '/CopyrightNotice.txt')) {
-        packageData.notice = readFileSync(packageData.path + '/CopyrightNotice.txt', 'utf8')
-      }
-      packagesWithLicense++
-    } else {
-      if (licenses[packageData.licenses]) {
-        packageData.license = licenses[packageData.licenses]
+    if (!packageData.license) {
+      const sharedLicenseText = licenses[packageData.licenses]
+      if (sharedLicenseText) {
+        packageData.license = sharedLicenseText
         console.log(`  ⚠ No license file for package: ${packageName}. Using license from other package: ${packageData.licenses}`)
-        packagesWithLicense++
       } else {
+        packagesWithoutLicense.push(packageName)
         console.log(`  ❗ No license file for package: ${packageName}. No license found for this package. ‼`)
       }
     }
+
+    delete packageData.licenseFile
     delete packageData.path
-    pckagesArray.push(packageData)
+    packagesArray.push(packageData)
   }
 
-  const verifier = new Verifier(args.projectPath, pckagesArray, !!args.outLicensesDir, !!args.outputJsonFile)
-  verifier.allPackagesHaveLicense(packagesWithLicense)
+  const verifier = new Verifier(args.projectPath, packagesArray, !!args.outLicensesDir, !!args.outputJsonFile)
+  verifier.allPackagesHaveLicense(packagesWithoutLicense)
+  verifier.noPackageHasAnUnknownLicense()
   verifier.allLicensesAreWithelistedInPackageDotJson()
 
   if (args.outputTsOrJsFile) {
-    new LicensesData().exportLicensesToTsOrJsFile(pckagesArray, args.outputTsOrJsFile)
+    new LicensesData().exportLicensesToTsOrJsFile(packagesArray, args.outputTsOrJsFile)
   }
 
   if (args.outLicensesDir) {
@@ -69,8 +81,9 @@ export async function start (args: ILicensesVerifierCliOptions): Promise<void> {
   if (args.outputJsonFile) {
     LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, args.outputJsonFile)
   }
+
+  return verifier.result()
 }
 
-start(
-  argsParser()
-)
+export { argsParser, getLicenses, LicensesData, Verifier }
+export * from './types'
