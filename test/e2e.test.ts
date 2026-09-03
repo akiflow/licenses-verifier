@@ -4,7 +4,7 @@ import { existsSync } from 'fs'
 import { join } from 'path'
 import * as h from './helpers'
 
-const root = join(import.meta.dir, '..')
+const root = join(__dirname, '..')
 const bin = join(root, 'bin', 'licenses-verifier.js')
 const built = existsSync(join(root, 'dist', 'cli.js'))
 

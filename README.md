@@ -194,6 +194,11 @@ to npm. They skip themselves when `dist/` has not been built.
 `bunfig.toml` sets a per-file coverage floor that `bun test --coverage` enforces, so coverage
 cannot quietly rot.
 
+There are two TypeScript configs. `tsconfig.json` covers `src/` and `test/` together and emits
+nothing: it is what the editor and `yarn typecheck` use, so the tests are type-checked like any
+other code. `tsconfig.build.json` compiles `src/` to `dist/` and excludes the tests, so they can
+never reach the published package.
+
 To publish, run `yarn publishToNpm` from the repository root. `prepublishOnly` builds the package,
 runs the tests, checks that the tarball contains runnable JavaScript and no runtime dependencies,
 then installs and runs the packed tarball under both npm and yarn. Every one of those steps has to

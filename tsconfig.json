@@ -1,11 +1,10 @@
 {
+  "//": "Editor and typecheck config: covers the sources and the tests. The published build uses tsconfig.build.json, which emits src/ only.",
   "compilerOptions": {
     "target": "ES2019",
     "lib": ["ES2019"],
     "module": "commonjs",
     "moduleResolution": "Node",
-    "rootDir": "./src/",
-    "outDir": "./dist/",
     "declaration": true,
     "strict": true,
     "noImplicitAny": true,
@@ -17,14 +16,16 @@
     "esModuleInterop": false,
     "allowSyntheticDefaultImports": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "resolveJsonModule": true,
+    "types": ["node", "bun"],
+    "noEmit": true
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.ts",
+    "test/**/*.ts"
   ],
   "exclude": [
     "node_modules",
-    "dist",
-    "test"
+    "dist"
   ]
 }

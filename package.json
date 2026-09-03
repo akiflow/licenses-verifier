@@ -22,18 +22,18 @@
   ],
   "scripts": {
     "clean": "node scripts/clean.js",
-    "build": "node scripts/clean.js && tsc",
-    "watch": "tsc --watch",
-    "typecheck": "tsc --noEmit",
-    "test": "node scripts/clean.js && tsc && bun test",
+    "build": "node scripts/clean.js && tsc -p tsconfig.build.json",
+    "watch": "tsc -p tsconfig.build.json --watch",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "node scripts/clean.js && tsc -p tsconfig.build.json && bun test",
     "test:only": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "verify-package": "node scripts/verify-package.js",
     "smoke-test": "node scripts/smoke-test.js",
-    "self-check": "node scripts/clean.js && tsc && node bin/licenses-verifier.js",
+    "self-check": "node scripts/clean.js && tsc -p tsconfig.build.json && node bin/licenses-verifier.js",
     "publishToNpm": "npm publish --access public",
-    "prepublishOnly": "node scripts/clean.js && tsc && bun test --coverage && node scripts/verify-package.js && node scripts/smoke-test.js"
+    "prepublishOnly": "node scripts/clean.js && tsc -p tsconfig.build.json && tsc --noEmit -p tsconfig.json && bun test --coverage && node scripts/verify-package.js && node scripts/smoke-test.js"
   },
   "whitelistedLicenses": [
     "MIT",
@@ -50,6 +50,7 @@
     "BlueOak-1.0.0"
   ],
   "devDependencies": {
+    "@types/bun": "^1.4.0",
     "@types/node": "^20.11.5",
     "typescript": "^5.3.3"
   },

@@ -175,7 +175,7 @@ describe('getLicenses', () => {
         h.writeProject(dir, { name: 'root', version: '1.0.0', license: 'MIT' })
         h.writePackage(dir, 'bare', { license: 'MIT' })
 
-        const info = collect(dir)?.['bare@1.0.0'] as Record<string, unknown>
+        const info = collect(dir)?.['bare@1.0.0'] as unknown as Record<string, unknown>
         expect(info.license).toBe('')
         for (const field of ['repository', 'publisher', 'email', 'url', 'notice', 'licenseFile']) {
           expect(field in info).toBe(false)

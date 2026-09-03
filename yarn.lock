@@ -2,12 +2,33 @@
 # yarn lockfile v1
 
 
+"@types/bun@^1.4.0":
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/@types/bun/-/bun-1.4.0.tgz#d9e37d973448b437e9cbf3cea42c801b6662c777"
+  integrity sha512-K+lZULY23vRgK/CfTjFIV+tyifaNdSMlPh9j+6mQ/cLfpOznLyAuzgV/JQysyECpkBQLVMSyvjlr2fBUSA9wFQ==
+  dependencies:
+    bun-types "1.4.0"
+
+"@types/node@*":
+  version "26.4.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-26.4.1.tgz#3d8dc80515894958448ee266cf5d6bc3e5205bd5"
+  integrity sha512-k97ENvZWtvA6yqz5/FS6a7duDgOPEeOQOc2iKS/nY6mX6qJUKtLnWzQS+Xj6tXweyj6ZcTAK2Qecetnvi9nCLA==
+  dependencies:
+    undici-types "~8.3.0"
+
 "@types/node@^20.11.5":
   version "20.19.43"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-20.19.43.tgz#fcecf580ba42a0db55cf404c372c97973c376c97"
   integrity sha512-6oYBAi5ikg4Pl+kGsoYtawUMBT2zZMCvPNF7pVLnHZfd1zf38DRiWn/gT01RYCdUqkv7Fhr+C9ot4/tb+2sVvA==
   dependencies:
     undici-types "~6.21.0"
+
+bun-types@1.4.0:
+  version "1.4.0"
+  resolved "https://registry.yarnpkg.com/bun-types/-/bun-types-1.4.0.tgz#2097c0712a18d86f7c9425c2538c65eb18638b13"
+  integrity sha512-iIKw23BspnQQYd3prITOBxeUsxBHnwzX6YJfGMuNOZzeNcMmVqzIIVGRm1l69ogaPQmb4wB6BN8mA5bE9YuC5Q==
+  dependencies:
+    "@types/node" "*"
 
 typescript@^5.3.3:
   version "5.9.3"
@@ -18,3 +39,8 @@ undici-types@~6.21.0:
   version "6.21.0"
   resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-6.21.0.tgz#691d00af3909be93a7faa13be61b3a5b50ef12cb"
   integrity sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==
+
+undici-types@~8.3.0:
+  version "8.3.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-8.3.0.tgz#44e9fc9f3244648cdea35e4f9bb2d681e9410809"
+  integrity sha512-j375ScV60dom+YkPFIfTLcOiPxkN/buHz5GobjLhixFuANaNs3C9l4GmrWqejgXWJ7BbJcFYpTEUkS1Ge8bpZQ==
