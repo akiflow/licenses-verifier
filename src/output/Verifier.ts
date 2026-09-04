@@ -238,7 +238,9 @@ export class Verifier {
    * One line per way out, printed only when something actually needs a decision.
    */
   private printHowToWhitelist (): void {
-    const license = this.nonWhitelistedLicensesFound[0]
+    // `UNKNOWN` is never a useful example: whitelisting it deliberately does
+    // not silence anything, so offering it would send the reader nowhere.
+    const license = this.nonWhitelistedLicensesFound.find(id => id !== UNKNOWN_LICENSE)
     const packageToReview = this.packagesWithUnknownLicense[0] || this.firstOffendingPackage()
     if (packageToReview === undefined) {
       return

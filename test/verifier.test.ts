@@ -351,6 +351,19 @@ describe('the instructions to whitelist', () => {
     expect(out).toContain('e.g. "dep@1.0.0"')
   })
 
+  test('never offer UNKNOWN as the license to whitelist', () => {
+    // Whitelisting UNKNOWN does not silence it, so it is not a way out.
+    const { out } = verify([pkg('mystery@1.0.0', 'UNKNOWN'), pkg('gpl-dep@1.0.0', 'GPL-3.0')], ['MIT'])
+    expect(out).toContain('\'whitelistedLicenses\' in package.json, e.g. "GPL-3.0"')
+    expect(out).not.toContain('e.g. "UNKNOWN"')
+  })
+
+  test('name no license at all when UNKNOWN is the only one', () => {
+    const { out } = verify([pkg('mystery@1.0.0', 'UNKNOWN')], ['MIT'])
+    expect(out).not.toContain('\'whitelistedLicenses\' in package.json, e.g.')
+    expect(out).toContain('\'whitelistedPackages\' in package.json, e.g. "mystery@1.0.0"')
+  })
+
   test('are printed when the project declares no whitelist at all', () => {
     const { out } = verify([pkg('mystery@1.0.0', 'UNKNOWN')])
     expect(out).toContain('\'whitelistedPackages\' in package.json, e.g. "mystery@1.0.0"')
