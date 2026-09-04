@@ -15,9 +15,12 @@ $ npx licenses-verifier --production
 
 [LicenseVerifier] - Analyzing project in directory /Users/you/projects/acme-dashboard
 
-  ❗ No license file for package: legacy-shim@0.4.0. No license found for this package. ‼
   ⚠ 3 packages ship no copy of their license: the text of the same license found in another package was used.
-  ‼ 1 of 9 packages do not ship a copy of their license, please check the above output.
+
+  ‼ No license found for 1 of 8 packages:
+       acme-dashboard@1.4.0
+       └─ ui-charts@4.1.0
+          └─ legacy-shim@0.4.0 ❗
 
   ❗ 1 package has an undeterminable license.
   ❗ legacy-shim@0.4.0
@@ -105,6 +108,14 @@ That is the whole setup. Everything below is reference material.
 Licenses Verifier lists every dependency of your project — production and development, recursively — determines the license of each one, and checks it against the `whitelistedLicenses` array of your `package.json`.
 
 A dependency whose license is not on that list is reported as a problem. So is a dependency whose license cannot be determined at all. If no whitelist is provided, a warning is shown instead.
+
+### Your own code is not a dependency
+
+The project itself and its workspace packages are left out of the report and of the generated files. The question this tool answers is what third party code your project carries, and code you wrote is not part of the answer: a monorepo would otherwise report its own `UNLICENSED` packages as a licensing problem on every run.
+
+A package counts as your own when it does not live under a `node_modules` directory. Everything a package manager fetches from a registry does, whichever manager installed it; what does not is your source, including the workspace packages that npm, yarn and pnpm all materialise as a symlink out of `node_modules` and back into the repository. This also covers a `file:` dependency pointing at a folder of your own.
+
+Your project still appears as the root of the dependency trees, because that is where every dependency comes from.
 
 ### Whitelisting a package
 
@@ -287,6 +298,11 @@ generated files are unchanged, with these differences:
   package produces no output at all, while still appearing in the generated files.
 - **Packages can be excluded** through `excludedPackages` in `package.json`, together with
   everything only they required: those do not appear in the generated files either.
+- **The project and its workspace packages are no longer reported.** Version 2 listed the project
+  itself among the packages to check, which made a monorepo report its own packages as a
+  licensing problem.
+- **Packages whose license text could not be found anywhere** are now reported as one block with
+  the dependency tree that brought each of them in, instead of one line each.
 - `--outputJsonFile` and `--jsonFile` now work as documented; version 2 only accepted `--json`.
 - The library entry point no longer runs the CLI as a side effect of being imported.
 - Requires Node 14 or later.

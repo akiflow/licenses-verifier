@@ -45,7 +45,8 @@ describe('start', () => {
       project(dir)
       const { result } = h.captureConsole(() => start({ projectPath: dir }))
       expect(result?.passed).toBe(true)
-      expect(result?.totalPackages).toBe(3)
+      // Two dependencies: the project itself is not one of them.
+      expect(result?.totalPackages).toBe(2)
     })
   })
 
@@ -65,12 +66,12 @@ describe('start', () => {
       // Declares MIT but ships no license file.
       h.writePackage(dir, 'no-text', { license: 'MIT' })
       const { result, out } = h.captureConsole(() => start({ projectPath: dir }))
-      expect(result?.packagesWithBorrowedLicense).toContain('no-text@1.0.0')
+      expect(result?.packagesWithBorrowedLicense).toEqual(['no-text@1.0.0'])
       expect(result?.passed).toBe(true)
       expect(result?.packagesWithoutLicense).toEqual([])
       // One line for all of them, however many there are: nothing has to be
       // done about any of them.
-      expect(out).toContain('packages ship no copy of their license')
+      expect(out).toContain('ships no copy of their license')
       expect(out).not.toContain('no-text@1.0.0')
     })
   })
@@ -182,9 +183,11 @@ describe('start', () => {
       // The only ISC package ships no text, so there is nothing to borrow.
       h.writePackage(dir, 'lonely', { license: 'ISC' })
       const { result, out } = h.captureConsole(() => start({ projectPath: dir }))
-      expect(out).toContain('❗ No license file for package: lonely@1.0.0')
-      expect(out).toContain('No license found for this package')
+      expect(out).toContain('‼ No license found for 1 of')
+      expect(out).toContain('       lonely@1.0.0')
       expect(result?.packagesWithoutLicense).toContain('lonely@1.0.0')
+      // Nothing declares it, which is itself worth knowing.
+      expect(out).toContain('(not required by package.json)')
       // Missing text is not a compliance failure: the license is known.
       expect(result?.passed).toBe(true)
     })
@@ -211,13 +214,13 @@ describe('start', () => {
       const { out, result } = h.captureConsole(() => start({ projectPath: dir, outputJsonFile: target }))
 
       const names = JSON.parse(readFileSync(target, 'utf8')).map((p: { name: string }) => p.name)
-      expect(names.sort()).toEqual(['app@1.0.0', 'keeper@1.0.0', 'shared@1.0.0'])
+      expect(names.sort()).toEqual(['keeper@1.0.0', 'shared@1.0.0'])
       // Not a word about either, and the GPL they carried is gone with them.
       expect(out).not.toContain('toolkit')
       expect(out).not.toContain('only-child')
       expect(out).not.toContain('GPL-3.0')
       expect(result?.passed).toBe(true)
-      expect(result?.totalPackages).toBe(3)
+      expect(result?.totalPackages).toBe(2)
     })
   })
 
@@ -236,13 +239,13 @@ describe('start', () => {
       h.writePackage(dir, 'prod-dep', { license: 'GPL-3.0' }, { LICENSE: h.GPL3_TEXT })
       h.writePackage(dir, 'dev-dep', { license: 'GPL-3.0' }, { LICENSE: h.GPL3_TEXT })
 
+      // Nothing at all is left to report in either mode.
       const production = h.captureConsole(() => start({ projectPath: dir, production: true }))
-      expect(production.result?.totalPackages).toBe(1)
+      expect(production.result?.totalPackages).toBe(0)
       expect(production.result?.passed).toBe(true)
 
-      // Only the project itself is left in either mode.
       const development = h.captureConsole(() => start({ projectPath: dir, development: true }))
-      expect(development.result?.totalPackages).toBe(1)
+      expect(development.result?.totalPackages).toBe(0)
       expect(development.result?.passed).toBe(true)
     })
   })
@@ -262,7 +265,7 @@ describe('start', () => {
       h.writePackage(dir, 'any-version', { version: '9.9.9', license: 'MIT' } as never, { LICENSE: h.MIT_TEXT })
 
       const { result } = h.captureConsole(() => start({ projectPath: dir }))
-      expect(result?.totalPackages).toBe(1)
+      expect(result?.totalPackages).toBe(0)
     })
   })
 
@@ -280,7 +283,7 @@ describe('start', () => {
       h.writePackage(dir, 'pinned', { license: 'MIT' }, { LICENSE: h.MIT_TEXT })
 
       const { result } = h.captureConsole(() => start({ projectPath: dir }))
-      expect(result?.totalPackages).toBe(2)
+      expect(result?.totalPackages).toBe(1)
     })
   })
 
@@ -327,6 +330,26 @@ describe('start', () => {
       // Not one line about either of them: the whitelist has to actually silence.
       expect(out).not.toContain('copyleft@1.0.0')
       expect(out).not.toContain('mystery@1.0.0')
+    })
+  })
+
+  test('shows what brought in a package that has no license', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT', 'ISC'],
+        dependencies: { toolkit: '1' }
+      })
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'toolkit', { license: 'MIT', dependencies: { lonely: '1' } }, { LICENSE: h.MIT_TEXT })
+      // Declares ISC, ships no text, and no other ISC package can lend one.
+      h.writePackage(dir, 'lonely', { license: 'ISC' })
+
+      const { out } = h.captureConsole(() => start({ projectPath: dir }))
+
+      expect(out).toContain('‼ No license found for 1 of 2 packages:')
+      expect(out).toContain('       app@1.0.0')
+      expect(out).toContain('       └─ toolkit@1.0.0')
+      expect(out).toContain('          └─ lonely@1.0.0 ❗')
     })
   })
 
@@ -432,16 +455,16 @@ describe('start', () => {
       // entries, which is what an application ships to show its licenses.
       expect(Array.isArray(packages)).toBe(true)
       expect(packages.map((p: { name: string }) => p.name)).toEqual([
-        'app@1.0.0', 'isc-dep@1.0.0', 'with-text@1.0.0'
+        'isc-dep@1.0.0', 'with-text@1.0.0'
       ])
-      expect(packages[1]).toMatchObject({
+      expect(packages[0]).toMatchObject({
         name: 'isc-dep@1.0.0',
         licenses: 'ISC',
         license: h.ISC_TEXT
       })
       // Internal fields must never reach the output.
-      expect(packages[1].path).toBeUndefined()
-      expect(packages[1].licenseFile).toBeUndefined()
+      expect(packages[0].path).toBeUndefined()
+      expect(packages[0].licenseFile).toBeUndefined()
     })
   })
 
@@ -465,7 +488,7 @@ describe('start', () => {
       const target = join(dir, 'out', 'byLicense.json')
       h.captureConsole(() => start({ projectPath: dir, outputGroupedJsonFile: target }))
       const grouped = JSON.parse(readFileSync(target, 'utf8'))
-      expect(grouped.MIT).toEqual(['app@1.0.0', 'with-text@1.0.0'])
+      expect(grouped.MIT).toEqual(['with-text@1.0.0'])
       expect(grouped.ISC).toEqual(['isc-dep@1.0.0'])
     })
   })
@@ -523,13 +546,13 @@ describe('start', () => {
       const production = h.captureConsole(() => start({
         projectPath: dir, production: true, outputGroupedJsonFile: join(dir, 'prod.json')
       }))
-      expect(production.result?.totalPackages).toBe(2)
+      expect(production.result?.totalPackages).toBe(1)
       expect(JSON.parse(readFileSync(join(dir, 'prod.json'), 'utf8'))).toEqual({
-        MIT: ['app@1.0.0', 'prod-dep@1.0.0']
+        MIT: ['prod-dep@1.0.0']
       })
 
       const development = h.captureConsole(() => start({ projectPath: dir, development: true }))
-      expect(development.result?.totalPackages).toBe(2)
+      expect(development.result?.totalPackages).toBe(1)
     })
   })
 
@@ -539,7 +562,7 @@ describe('start', () => {
       h.withCwd(dir, () => {
         const { result } = h.captureConsole(() => start({ projectPath: './nested' }))
         expect(result?.passed).toBe(true)
-        expect(result?.totalPackages).toBe(3)
+        expect(result?.totalPackages).toBe(2)
       })
     })
   })

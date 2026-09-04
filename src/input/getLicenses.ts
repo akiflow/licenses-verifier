@@ -118,8 +118,26 @@ function toModuleInfo (pkg: IInstalledPackage): IModuleInfo {
 }
 
 /**
- * Reads the project and every one of its installed dependencies, and returns
- * their license information keyed by `name@version`.
+ * True when a package was put there by a package manager, i.e. when it lives
+ * inside a `node_modules` directory.
+ *
+ * Everything fetched from a registry does, whichever package manager installed
+ * it. What does not is the project's own source: itself, and the packages of
+ * its workspaces, which every package manager materialises as a symlink out of
+ * `node_modules` and back into the repository. Those are code you wrote, not a
+ * third party license to review, so they have no place in the report.
+ */
+function isInstalledDependency (realDir: string): boolean {
+  return realDir.split(/[\\/]/).includes('node_modules')
+}
+
+/**
+ * Reads the installed dependencies of a project and returns their license
+ * information keyed by `name@version`.
+ *
+ * The project itself and its workspace packages are left out: the question this
+ * answers is what third party code the project carries, and your own code is
+ * not part of the answer.
  *
  * Returns null when the given directory holds no project and no packages, so
  * that the caller can tell the user the path is probably wrong.
@@ -135,24 +153,11 @@ export function getLicenses (args: ILicensesVerifierCliOptions): IModuleInfos | 
     return null
   }
 
-  // The project itself is part of the report: its own license is what the
-  // whitelist of its dependencies has to be compatible with.
-  const all: Array<IInstalledPackage> = []
-  if (projectManifest !== null && typeof projectManifest.name === 'string' && projectManifest.name) {
-    const version = typeof projectManifest.version === 'string' ? projectManifest.version : '0.0.0'
-    all.push({
-      key: `${projectManifest.name}@${version}`,
-      name: projectManifest.name,
-      version,
-      dir: projectDir,
-      realDir: projectDir,
-      manifest: projectManifest
-    })
-  }
-  all.push(...selected)
-
   const result: IModuleInfos = {}
-  for (const pkg of all) {
+  for (const pkg of selected) {
+    if (!isInstalledDependency(pkg.realDir)) {
+      continue
+    }
     // Breadth-first order means the first occurrence is the hoisted one.
     if (!result[pkg.key]) {
       result[pkg.key] = toModuleInfo(pkg)

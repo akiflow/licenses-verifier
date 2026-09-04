@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'bun:test'
+import { mkdirSync, symlinkSync } from 'fs'
 import { join } from 'path'
 import { getLicenses } from '../src/input/getLicenses'
 import type { ILicensesVerifierCliOptions } from '../src/types'
@@ -18,10 +19,11 @@ describe('getLicenses', () => {
     })
   })
 
-  test('reports a project with no dependencies', () => {
+  test('reports nothing for a project with no dependencies', () => {
     h.withTempDir(dir => {
+      // The project is not a third party dependency of itself.
       h.writeProject(dir, { name: 'solo', version: '2.1.0', license: 'MIT' })
-      expect(sortedKeys(collect(dir))).toEqual(['solo@2.1.0'])
+      expect(sortedKeys(collect(dir))).toEqual([])
     })
   })
 
@@ -32,10 +34,34 @@ describe('getLicenses', () => {
     })
   })
 
-  test('defaults a project with no version', () => {
+  test('defaults a dependency with no version', () => {
     h.withTempDir(dir => {
-      h.writeProject(dir, { name: 'unversioned', license: 'MIT' })
+      h.writeProject(dir, { name: 'root', version: '1.0.0', license: 'MIT' })
+      h.writePackage(dir, 'unversioned', { version: undefined, license: 'MIT' } as never)
       expect(sortedKeys(collect(dir))).toEqual(['unversioned@0.0.0'])
+    })
+  })
+
+  test('leaves out the project and its workspace packages', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'monorepo',
+        version: '1.0.0',
+        license: 'MIT',
+        workspaces: ['packages/*'],
+        dependencies: { '@scope/ui-kit': '1', 'from-registry': '1' }
+      })
+      // A workspace package: source in the repository, symlinked into
+      // node_modules the way every package manager materialises one.
+      const workspace = join(dir, 'packages', 'ui-kit')
+      h.writeBarePackage(workspace, { name: '@scope/ui-kit', version: '0.0.0', license: 'UNLICENSED' })
+      mkdirSync(join(dir, 'node_modules', '@scope'), { recursive: true })
+      symlinkSync(workspace, join(dir, 'node_modules', '@scope', 'ui-kit'))
+      h.writePackage(dir, 'from-registry', { license: 'MIT' })
+
+      // Neither the project nor its workspace is a third party dependency.
+      expect(sortedKeys(collect(dir))).toEqual(['from-registry@1.0.0'])
+      expect(sortedKeys(collect(dir, { production: true }))).toEqual(['from-registry@1.0.0'])
     })
   })
 
@@ -69,7 +95,7 @@ describe('getLicenses', () => {
       h.withTempDir(dir => {
         fixture(dir)
         expect(sortedKeys(collect(dir))).toEqual([
-          'dev@1.0.0', 'extraneous@1.0.0', 'opt@1.0.0', 'prod@1.0.0', 'root@1.0.0', 'transitive@1.0.0'
+          'dev@1.0.0', 'extraneous@1.0.0', 'opt@1.0.0', 'prod@1.0.0', 'transitive@1.0.0'
         ])
       })
     })
@@ -78,7 +104,7 @@ describe('getLicenses', () => {
       h.withTempDir(dir => {
         fixture(dir)
         expect(sortedKeys(collect(dir, { production: true }))).toEqual([
-          'opt@1.0.0', 'prod@1.0.0', 'root@1.0.0', 'transitive@1.0.0'
+          'opt@1.0.0', 'prod@1.0.0', 'transitive@1.0.0'
         ])
       })
     })
@@ -86,7 +112,7 @@ describe('getLicenses', () => {
     test('--development reports only what does not ship', () => {
       h.withTempDir(dir => {
         fixture(dir)
-        expect(sortedKeys(collect(dir, { development: true }))).toEqual(['dev@1.0.0', 'root@1.0.0'])
+        expect(sortedKeys(collect(dir, { development: true }))).toEqual(['dev@1.0.0'])
       })
     })
 
@@ -125,8 +151,8 @@ describe('getLicenses', () => {
 
         // Nothing is installed under the project itself, so a plain directory
         // walk would report nothing at all.
-        expect(sortedKeys(collect(app))).toEqual(['app@1.0.0', 'hoisted@4.0.0'])
-        expect(sortedKeys(collect(app, { production: true }))).toEqual(['app@1.0.0', 'hoisted@4.0.0'])
+        expect(sortedKeys(collect(app))).toEqual(['hoisted@4.0.0'])
+        expect(sortedKeys(collect(app, { production: true }))).toEqual(['hoisted@4.0.0'])
       })
     })
 
@@ -199,7 +225,7 @@ describe('getLicenses', () => {
         expect(packages?.['direct@1.0.0'].requiredBy).toBe('root@1.0.0')
         expect(packages?.['transitive@1.0.0'].requiredBy).toBe('direct@1.0.0')
         expect(packages?.['stray@1.0.0'].requiredBy).toBeUndefined()
-        expect(packages?.['root@1.0.0'].requiredBy).toBeUndefined()
+        expect(packages?.['root@1.0.0']).toBeUndefined()
       })
     })
 

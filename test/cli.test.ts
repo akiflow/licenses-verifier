@@ -60,7 +60,7 @@ describe('main', () => {
       h.writePackage(dir, 'terse', { license: 'MIT' })
       const { result, out } = h.captureConsole(() => main([`--projectPath=${dir}`]))
       expect(result).toBe(EXIT_OK)
-      expect(out).toContain('ship no copy of their license')
+      expect(out).toContain('no copy of their license')
     })
   })
 

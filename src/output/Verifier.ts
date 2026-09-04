@@ -36,12 +36,16 @@ export class Verifier {
    *
    * Packages that borrowed the text of their license from another package using
    * the same license are counted in a single line: there are routinely hundreds
-   * of them, and nothing has to be done about any of them.
+   * of them, and nothing has to be done about any of them. The ones whose text
+   * could not be found anywhere get the tree that brought them in, because each
+   * of them is a package somebody has to go and look at, and the first question
+   * they will ask is why it is there at all.
    */
   public allPackagesHaveLicense (
     packagesWithoutLicenseText: Array<string>,
     packagesWithBorrowedLicenseText: Array<string> = []
   ): void {
+    this.loadWhitelistsFromPackageDotJson()
     const numberOfPackages = this.packagesArray.length
     this.packagesWithoutLicenseText = packagesWithoutLicenseText
     this.packagesWithBorrowedLicenseText = packagesWithBorrowedLicenseText
@@ -52,9 +56,10 @@ export class Verifier {
     }
     if (packagesWithoutLicenseText.length === 0) {
       console.log(`  ✔ All ${numberOfPackages} packages have a license.`)
-    } else {
-      console.log(`  ‼ ${packagesWithoutLicenseText.length} of ${numberOfPackages} packages do not ship a copy of their license, please check the above output.`)
+      return
     }
+    console.log(`\n  ‼ No license found for ${packagesWithoutLicenseText.length} of ${numberOfPackages} packages:`)
+    this.printDependencyTree(packagesWithoutLicenseText)
   }
 
   /**

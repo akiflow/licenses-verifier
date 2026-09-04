@@ -75,8 +75,8 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
           packagesWithBorrowedLicense.push(packageName)
         }
       } else if (!isWhitelisted(packageData.name)) {
+        // Listed in one block by the verifier, rather than one line each.
         packagesWithoutLicense.push(packageName)
-        console.log(`  ❗ No license file for package: ${packageName}. No license found for this package. ‼`)
       }
     }
 
@@ -93,6 +93,8 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
   // Sorted by `name@version` so that regenerating the outputs on a different
   // machine produces the same file, and a diff only shows real changes.
   packagesArray.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  packagesWithoutLicense.sort()
+  packagesWithBorrowedLicense.sort()
   for (const license in packagesByLicense) {
     packagesByLicense[license].sort()
   }

@@ -54,7 +54,11 @@ describe('allPackagesHaveLicense', () => {
       const packages = [pkg('a@1', 'MIT'), pkg('b@1', 'MIT'), pkg('c@1', 'MIT')]
       const verifier = new Verifier(dir, packages, false, false)
       const { out } = h.captureConsole(() => verifier.allPackagesHaveLicense(['b@1', 'c@1']))
-      expect(out).toContain('‼ 2 of 3 packages do not ship a copy of their license')
+      // The count, then each package: every one of them needs a look.
+      expect(out).toContain('‼ No license found for 2 of 3 packages:')
+      expect(out).toContain('       b@1')
+      expect(out).toContain('       c@1')
+      expect(out).not.toContain('a@1')
       expect(verifier.result().packagesWithoutLicense).toEqual(['b@1', 'c@1'])
       expect(verifier.result().packagesWithLicense).toBe(1)
     })
@@ -89,6 +93,21 @@ describe('allPackagesHaveLicense', () => {
     const { out, result } = verify([pkg('a@1', 'MIT')], ['MIT'])
     expect(out).not.toContain('ship no copy')
     expect(result.packagesWithBorrowedLicense).toEqual([])
+  })
+
+  test('shows the dependency tree of the packages with no license', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, { name: 'root', version: '1.0.0', whitelistedLicenses: ['MIT'] })
+      const parents = new Map([['mystery@1', 'toolkit@1'], ['toolkit@1', 'root@1.0.0']])
+      const verifier = new Verifier(dir, [pkg('mystery@1', 'MIT')], false, false, parents)
+      const { out } = h.captureConsole(() => verifier.allPackagesHaveLicense(['mystery@1']))
+
+      // The first question about a package with no license is why it is here.
+      expect(out).toContain('‼ No license found for 1 of 1 packages:')
+      expect(out).toContain('       root@1.0.0')
+      expect(out).toContain('       └─ toolkit@1')
+      expect(out).toContain('          └─ mystery@1 ❗')
+    })
   })
 
   test('a missing license text does not fail the verification', () => {
