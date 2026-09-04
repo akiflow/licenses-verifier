@@ -11,27 +11,24 @@
  * MODULE_NOT_FOUND for everyone who installed it.
  */
 
-const { execFileSync, spawnSync } = require('child_process')
-const { mkdtempSync, readdirSync, renameSync, rmSync, writeFileSync } = require('fs')
+const { copyFileSync, mkdtempSync, readdirSync, rmSync, writeFileSync } = require('fs')
 const { join } = require('path')
 const { tmpdir } = require('os')
+const { runSync, trySync, tryBinarySync } = require('./exec')
 
 const root = join(__dirname, '..')
-const isWindows = process.platform === 'win32'
 
-/** On Windows these are .cmd shims, which execFileSync needs by their real name. */
-function command (name) {
-  return isWindows ? `${name}.cmd` : name
-}
+/** The tarball is copied under this fixed, boring name inside each temp project. */
+const TARBALL_NAME = 'package.tgz'
 
 function isAvailable (name) {
-  const probe = spawnSync(command(name), ['--version'], { stdio: 'ignore' })
+  const probe = trySync(name, ['--version'], { stdio: 'ignore' })
   return !probe.error && probe.status === 0
 }
 
 /** Packs the tarball that would be published, using npm: that is what the registry gets. */
 function pack () {
-  execFileSync(command('npm'), ['pack'], { cwd: root, stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' })
+  runSync('npm', ['pack'], { cwd: root, stdio: ['ignore', 'pipe', 'inherit'], encoding: 'utf8' })
   const tarball = readdirSync(root).find(name => name.endsWith('.tgz'))
   if (!tarball) {
     throw new Error('npm pack produced no tarball')
@@ -51,14 +48,19 @@ function verifyWith (packageManager, tarball) {
       whitelistedLicenses: ['MIT']
     }, null, 2))
 
+    // The tarball is installed from inside the project, by a relative path:
+    // every argument then goes through a Windows shell unscathed, whatever the
+    // temporary directory happens to be called.
+    copyFileSync(tarball, join(temp, TARBALL_NAME))
+
     // Yarn caches a `file:` dependency under `name-version-<hash of the path>`,
     // so a rebuilt tarball at the same path is served from the cache and the
     // smoke test silently checks a stale build. A throwaway cache folder, wiped
     // with the temporary project, makes the run test what was just packed.
     const install = packageManager === 'yarn'
-      ? ['add', `file:${tarball}`, '--no-lockfile', '--silent', '--cache-folder', join(temp, '.yarn-cache')]
-      : ['install', tarball, '--no-audit', '--no-fund']
-    execFileSync(command(packageManager), install, { cwd: temp, stdio: ['ignore', 'ignore', 'inherit'] })
+      ? ['add', `file:./${TARBALL_NAME}`, '--no-lockfile', '--silent', '--cache-folder', './.yarn-cache']
+      : ['install', `./${TARBALL_NAME}`, '--no-audit', '--no-fund']
+    runSync(packageManager, install, { cwd: temp, stdio: ['ignore', 'ignore', 'inherit'] })
 
     // Nothing but the tool itself may be installed.
     const unexpected = readdirSync(join(temp, 'node_modules'))
@@ -67,11 +69,9 @@ function verifyWith (packageManager, tarball) {
       problems.push(`installing the package pulled in dependencies: ${unexpected.join(', ')}`)
     }
 
-    const binary = join(temp, 'node_modules', '.bin', isWindows ? 'licenses-verifier.cmd' : 'licenses-verifier')
-    const result = spawnSync(binary, ['--json=./out/app-packages.json', '--jsonGroupedByLicense=./out/byLicense.json'], {
+    const result = tryBinarySync(temp, 'licenses-verifier', ['--json=./out/app-packages.json', '--jsonGroupedByLicense=./out/byLicense.json'], {
       cwd: temp,
-      encoding: 'utf8',
-      shell: isWindows
+      encoding: 'utf8'
     })
     const output = `${result.stdout || ''}${result.stderr || ''}`
 

@@ -10,9 +10,9 @@
  * Runs as part of `prepublishOnly`, and is safe to run in CI.
  */
 
-const { execFileSync } = require('child_process')
 const { existsSync } = require('fs')
 const { join } = require('path')
+const { runSync } = require('./exec')
 
 const root = join(__dirname, '..')
 const manifest = require(join(root, 'package.json'))
@@ -45,8 +45,7 @@ for (const entry of entryPoints) {
 // Ask npm what would actually be published, and check the tarball is complete.
 let packed
 try {
-  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm'
-  packed = JSON.parse(execFileSync(npm, ['pack', '--dry-run', '--json'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }))
+  packed = JSON.parse(runSync('npm', ['pack', '--dry-run', '--json'], { cwd: root, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }))
 } catch (error) {
   problems.push(`Could not run 'npm pack --dry-run': ${error.message}`)
 }
