@@ -33,6 +33,32 @@ If no whitelist is provided, a warning will be shown.
 
 If any dependency has no license, it will be reported as a problem.
 
+### Whitelisting a package
+
+Sometimes the decision is about one package rather than about a license: a proprietary dependency you have a contract for, a package whose license cannot be determined but that you have reviewed. Add it to the `whitelistedPackages` array in `package.json` and it is accepted whatever its license.
+
+Example:
+
+    "whitelistedPackages": [
+        "@vendor/sdk@2.4.0",
+        "some-package"
+    ]
+
+`name@version` accepts that one version, so a version bump comes back for review. The bare `name` accepts every version of it. Whitelisted packages are listed in the report and left unchecked.
+
+This is the only way to accept a package whose license is `UNKNOWN`: whitelisting the `UNKNOWN` identifier deliberately does not work, because it would also accept every future package the tool cannot make sense of.
+
+### Why is this package here?
+
+Every non whitelisted license is reported together with the packages using it, as the tree of dependencies that brought each of them in. The packages carrying the license are marked with `❗`; the others are on the way to them.
+
+    ❗ GPL-3.0, used by 1 package:
+         app@1.0.0
+         └─ some-toolkit@2.1.0
+            └─ copyleft-dep@1.0.0 ❗
+
+Nobody chooses a copyleft dependency on purpose: it arrives under something that was chosen. The tree says under what, which is usually where the problem has to be fixed.
+
 ### How the license of a package is determined
 
 In order, Licenses Verifier uses:
@@ -147,10 +173,10 @@ The package also exposes its API, with TypeScript types:
 import { getLicenses, start } from '@akiflow/licenses-verifier'
 
 // Just the data: every installed package, keyed by `name@version`.
-const packages = getLicenses({ projectPath: './', failOnViolation: false })
+const packages = getLicenses({ projectPath: './' })
 
 // The whole verification, including the report printed to stdout.
-const result = start({ projectPath: './', failOnViolation: false })
+const result = start({ projectPath: './' })
 if (result && !result.passed) {
   console.log(result.nonWhitelistedLicenses, result.packagesWithUnknownLicense)
 }
@@ -178,6 +204,10 @@ generated files are unchanged, with these differences:
   changes in a diff.
 - A package whose `package.json` is marked `"private": true` now carries `private: true` in the
   generated files, so an application can leave its own internal packages out of the list it shows.
+- **Packages that borrow the text of their license** from another package using the same license
+  are now reported in a single line instead of one warning each.
+- **A non whitelisted license is now reported with the dependency tree** of the packages using it.
+- **Packages can be whitelisted** through `whitelistedPackages` in `package.json`.
 - `--outputJsonFile` and `--jsonFile` now work as documented; version 2 only accepted `--json`.
 - The library entry point no longer runs the CLI as a side effect of being imported.
 - Requires Node 14 or later.

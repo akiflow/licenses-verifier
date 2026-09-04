@@ -39,11 +39,17 @@ function selectPackages (
   }
 
   // Installed packages come first: they are walked breadth first, so the
-  // hoisted copy of a duplicated package is the one that gets reported.
-  const selected = installed.slice()
-  const seen = new Set(installed.map(pkg => pkg.realDir))
+  // hoisted copy of a duplicated package is the one that gets reported. The
+  // manifest walk still runs, to learn which package required which: a package
+  // found only in `node_modules` has nothing depending on it.
   const reachableFields: Array<DependencyField> = ['dependencies', 'devDependencies', 'optionalDependencies']
-  for (const pkg of collectReachablePackages(projectDir, projectManifest, reachableFields).values()) {
+  const reachable = collectReachablePackages(projectDir, projectManifest, reachableFields)
+  const seen = new Set(installed.map(pkg => pkg.realDir))
+  const selected = installed.map(pkg => {
+    const viaManifest = reachable.get(pkg.realDir)
+    return viaManifest ? { ...pkg, requiredBy: viaManifest.requiredBy } : pkg
+  })
+  for (const pkg of reachable.values()) {
     if (!seen.has(pkg.realDir)) {
       seen.add(pkg.realDir)
       selected.push(pkg)
@@ -84,6 +90,9 @@ function toModuleInfo (pkg: IInstalledPackage): IModuleInfo {
   }
   if (license.licenseFile) {
     info.licenseFile = license.licenseFile
+  }
+  if (pkg.requiredBy) {
+    info.requiredBy = pkg.requiredBy
   }
   info.path = pkg.dir
 

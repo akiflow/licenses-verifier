@@ -23,6 +23,13 @@ export interface IModuleInfo {
   licenseFile?: string
   /** Absolute path of the package. Stripped before being exported. */
   path?: string
+  /**
+   * `name@version` of the package that required this one, i.e. the parent in
+   * the dependency tree. Absent for the project itself and for a package that
+   * sits in `node_modules` without anything depending on it.
+   * Stripped before being exported.
+   */
+  requiredBy?: string
 }
 
 export interface IModuleInfos {
@@ -52,9 +59,13 @@ export interface IVerificationResult {
   packagesWithLicense: number
   /** Packages whose license is known but whose license text is not on disk */
   packagesWithoutLicense: Array<string>
+  /** Packages that ship no license text and borrowed it from another package */
+  packagesWithBorrowedLicense: Array<string>
   /** Packages whose license could not be determined at all */
   packagesWithUnknownLicense: Array<string>
   nonWhitelistedLicenses: Array<string>
+  /** Packages accepted through the `whitelistedPackages` of the project */
+  whitelistedPackages: Array<string>
   hasWhitelist: boolean
   /** True when every license is known and none is outside the whitelist */
   passed: boolean

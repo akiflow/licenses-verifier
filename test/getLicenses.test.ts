@@ -185,6 +185,34 @@ describe('getLicenses', () => {
       })
     })
 
+    test('records which package required which', () => {
+      h.withTempDir(dir => {
+        h.writeProject(dir, {
+          name: 'root', version: '1.0.0', license: 'MIT', dependencies: { direct: '1' }
+        })
+        h.writePackage(dir, 'direct', { license: 'MIT', dependencies: { transitive: '1' } })
+        h.writePackage(dir, 'transitive', { license: 'MIT' })
+        // Installed, but nothing declares it.
+        h.writePackage(dir, 'stray', { license: 'MIT' })
+
+        const packages = collect(dir)
+        expect(packages?.['direct@1.0.0'].requiredBy).toBe('root@1.0.0')
+        expect(packages?.['transitive@1.0.0'].requiredBy).toBe('direct@1.0.0')
+        expect(packages?.['stray@1.0.0'].requiredBy).toBeUndefined()
+        expect(packages?.['root@1.0.0'].requiredBy).toBeUndefined()
+      })
+    })
+
+    test('records the parent of a package reached only through the manifest', () => {
+      h.withTempDir(dir => {
+        h.writeProject(dir, {
+          name: 'root', version: '1.0.0', license: 'MIT', dependencies: { direct: '1' }
+        })
+        h.writePackage(dir, 'direct', { license: 'MIT' })
+        expect(collect(dir, { production: true })?.['direct@1.0.0'].requiredBy).toBe('root@1.0.0')
+      })
+    })
+
     test('reports an undeterminable license as UNKNOWN', () => {
       h.withTempDir(dir => {
         h.writeProject(dir, { name: 'root', version: '1.0.0', license: 'MIT' })

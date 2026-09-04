@@ -13,6 +13,12 @@ export interface IInstalledPackage {
   /** Canonical path, used to identify a package across symlinked layouts */
   realDir: string
   manifest: IManifest
+  /**
+   * `name@version` of the package that required this one. Only set by
+   * `collectReachablePackages`, which is the walk that knows who depends on
+   * whom; the breadth first `node_modules` scan does not.
+   */
+  requiredBy?: string
 }
 
 /** Canonicalises a path, tolerating broken symlinks and missing directories. */
@@ -139,12 +145,17 @@ export function collectReachablePackages (
 ): Map<string, IInstalledPackage> {
   const reachable = new Map<string, IInstalledPackage>()
   const transitiveFields: Array<DependencyField> = ['dependencies', 'optionalDependencies']
-  const queue: Array<{ dir: string, names: Array<string> }> = [
-    { dir: projectDir, names: dependencyNames(projectManifest, rootFields) }
+  const projectKey = projectManifest && typeof projectManifest.name === 'string' && projectManifest.name
+    ? `${projectManifest.name}@${typeof projectManifest.version === 'string' ? projectManifest.version : '0.0.0'}`
+    : undefined
+  const queue: Array<{ dir: string, names: Array<string>, requiredBy?: string }> = [
+    { dir: projectDir, names: dependencyNames(projectManifest, rootFields), requiredBy: projectKey }
   ]
 
+  // Breadth first, so the recorded parent is the one on the shortest path from
+  // the project: that is the answer to "why is this package here?".
   while (queue.length > 0) {
-    const { dir, names } = queue.shift() as { dir: string, names: Array<string> }
+    const { dir, names, requiredBy } = queue.shift() as { dir: string, names: Array<string>, requiredBy?: string }
     for (const name of names) {
       const dependencyDir = resolveDependencyDir(dir, name)
       if (dependencyDir === null) {
@@ -159,15 +170,19 @@ export function collectReachablePackages (
         continue
       }
       const version = typeof manifest.version === 'string' ? manifest.version : '0.0.0'
+      const key = `${manifest.name}@${version}`
       reachable.set(realDir, {
-        key: `${manifest.name}@${version}`,
+        key,
         name: manifest.name,
         version,
         dir: dependencyDir,
         realDir,
-        manifest
+        manifest,
+        // A package that depends on itself is its own parent, which says
+        // nothing and would render as a loop.
+        requiredBy: requiredBy === key ? undefined : requiredBy
       })
-      queue.push({ dir: dependencyDir, names: dependencyNames(manifest, transitiveFields) })
+      queue.push({ dir: dependencyDir, names: dependencyNames(manifest, transitiveFields), requiredBy: key })
     }
   }
 

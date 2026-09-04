@@ -21,6 +21,7 @@ export interface IManifest {
   optionalDependencies?: Record<string, string>
   peerDependencies?: Record<string, string>
   whitelistedLicenses?: Array<string>
+  whitelistedPackages?: Array<string>
 }
 
 export type DependencyField = 'dependencies' | 'devDependencies' | 'optionalDependencies' | 'peerDependencies'

@@ -47,6 +47,8 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
   }
 
   const packagesWithoutLicense: Array<string> = []
+  const packagesWithBorrowedLicense: Array<string> = []
+  const dependencyParents = new Map<string, string>()
   for (const packageName in appPackages) {
     const packageData = appPackages[packageName]
 
@@ -58,16 +60,23 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
     if (!packageData.license) {
       const sharedLicenseText = licenses[packageData.licenses]
       if (sharedLicenseText) {
+        // Reported as a single line by the verifier: there are routinely
+        // hundreds of these, and none of them needs anything done about it.
         packageData.license = sharedLicenseText
-        console.log(`  ⚠ No license file for package: ${packageName}. Using license from other package: ${packageData.licenses}`)
+        packagesWithBorrowedLicense.push(packageName)
       } else {
         packagesWithoutLicense.push(packageName)
         console.log(`  ❗ No license file for package: ${packageName}. No license found for this package. ‼`)
       }
     }
 
+    if (packageData.requiredBy) {
+      dependencyParents.set(packageData.name, packageData.requiredBy)
+    }
+
     delete packageData.licenseFile
     delete packageData.path
+    delete packageData.requiredBy
     packagesArray.push(packageData)
   }
 
@@ -79,8 +88,8 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
   }
 
   const hasJsonOutput = !!args.outputJsonFile || !!args.outputGroupedJsonFile
-  const verifier = new Verifier(args.projectPath, packagesArray, !!args.outLicensesDir, hasJsonOutput)
-  verifier.allPackagesHaveLicense(packagesWithoutLicense)
+  const verifier = new Verifier(args.projectPath, packagesArray, !!args.outLicensesDir, hasJsonOutput, dependencyParents)
+  verifier.allPackagesHaveLicense(packagesWithoutLicense, packagesWithBorrowedLicense)
   verifier.noPackageHasAnUnknownLicense()
   verifier.allLicensesAreWithelistedInPackageDotJson()
 
