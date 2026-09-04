@@ -1,43 +1,114 @@
 # Licenses Verifier
 
-Verify that the dependencies of `package.json` are licensed in a way that allows their use in a given project.
+**Know which licenses you are shipping — before your lawyers, your customers or an acquirer ask.**
 
-**Zero dependencies.** Installing this tool adds exactly one package to your project, and nothing else. Runs on macOS, Windows and Linux.
+[![npm](https://img.shields.io/npm/v/@akiflow/licenses-verifier)](https://www.npmjs.com/package/@akiflow/licenses-verifier)
+[![node](https://img.shields.io/node/v/@akiflow/licenses-verifier)](https://nodejs.org)
+[![license](https://img.shields.io/npm/l/@akiflow/licenses-verifier)](./LICENSE)
 
-## Why?
+One command reads every dependency in your project, works out what each one is licensed under, checks it against the list your legal team approved, and fails the build when something is not on it.
 
-Save on legal expenses by ensuring that you can lawfully use all the dependencies in your project.
+**Zero dependencies.** Installing this tool adds exactly one package to your project, and nothing else. Runs on macOS, Windows and Linux, on Node 14 and later.
 
-This will help you to ensure that you are not infringing any copyrights or other intellectual property rights.
+```console
+$ npx licenses-verifier --production
 
-Thanks to Licenses Verifier, you will save time and money when, for example, going through a legal due diligence. It will be easier to show that you have the right licenses for all the dependencies in your project by providing to your attorneys the information they need.
+[LicenseVerifier] - Analyzing project in directory /Users/you/projects/acme-dashboard
 
-## How it works?
+  ❗ No license file for package: legacy-shim@0.4.0. No license found for this package. ‼
+  ⚠ 3 packages ship no copy of their license: the text of the same license found in another package was used.
+  ‼ 1 of 9 packages do not ship a copy of their license, please check the above output.
 
-Licenses Verifier checks that the dependencies in `package.json` are licensed in a way that allows their use in the current project.
+  ❗ 1 package has an undeterminable license.
+  ❗ legacy-shim@0.4.0
+  ❗ A package with no known license grants no rights: it must be reviewed before it can be used.
 
-This is done by first listing all the dependencies in `package.json` and then retrieving the licenses of such dependencies. This includes both the development and production licenses, and all of their dependencies (recursively).
+  ❗ 2 licenses are not whitelisted in package.json.
+  ❗ The non whitelisted licenses being used in this project are: "UNKNOWN", "GPL-3.0"
 
-These licenses are then checked against the whitelist of licenses that are allowed in the current project. To whitelist a license, add it to the `whitelistedLicenses` array in `package.json`.
+  ❗ UNKNOWN, used by 1 package:
+       acme-dashboard@1.4.0
+       └─ ui-charts@4.1.0
+          └─ legacy-shim@0.4.0 ❗
 
-Example:
+  ❗ GPL-3.0, used by 1 package:
+       acme-dashboard@1.4.0
+       └─ report-builder@2.3.0
+          └─ pdf-render@3.0.1 ❗
+
+  ❗ To accept a license everywhere, add it to 'whitelistedLicenses' in package.json, e.g. "GPL-3.0".
+  ❗ To accept one package whatever its license, add it to 'whitelistedPackages' in package.json, e.g. "legacy-shim@0.4.0".
+  ❗ To review what packages are using these licenses, pass the argument '--jsonGroupedByLicense=[pathToDirectoryAndFileName]'.
+  ❗ To export the licenses texts, pass the argument '--outLicensesDir=[pathToDirectory]'.
+  ❗ We strongly suggest to review the licenses used in this project with the support of an attorney.
+
+$ echo $?
+1
+```
+
+Nobody added `pdf-render` on purpose. It arrived under `report-builder`, which somebody did add — and that is where the problem gets fixed. The tree says so in three lines, and the build stops before a GPL-3.0 dependency ships inside a proprietary app.
+
+## Who is this for?
+
+### Developers
+
+- **One command, no configuration** beyond a list of approved licenses in your `package.json`.
+- **A CI gate that means something.** Exit code `1` when a license is not approved or cannot be determined, `2` on a typo in the arguments. No plugin, no service, no account.
+- **Actionable failures.** Not "you have a GPL dependency" but *which* package, and *which of your own dependencies* dragged it in, so you know what to replace or what to ask upstream about.
+- **Nothing to audit but the tool itself.** Zero runtime dependencies: the thing checking your supply chain is not itself a supply chain.
+
+### Legal and due diligence
+
+- **A complete inventory**: every package, its license identifier and the full text of that license, as JSON your counsel can work through.
+- **One file per license** (`--outLicensesDir`), ready to hand to an attorney without them cloning anything.
+- **No opinions baked in.** There is no bundled whitelist. What is acceptable depends on your project, and that decision belongs to your lawyers — it lives in your `package.json`, reviewed like any other change and versioned with the code.
+- **A record over time.** Because the approved list is in the repository, `git log` shows who approved which license, and when. That is a question due diligence actually asks.
+
+### Product and compliance
+
+- **The "Third-party licenses" screen, generated.** `--json` writes the file your app can ship and render as is — or a `.ts`/`.js` module to import instead (`--tsOrJsFile`).
+- **Stable output.** Files are sorted by `name@version`, so a regenerated file diffs down to what actually changed.
+
+### What it will not do for you
+
+This tool tells you what you are using. It does not tell you whether you are allowed to use it: that depends on your product, how you distribute it and where. Read the [disclaimer](#disclaimer), and talk to a lawyer.
+
+## Quick start
+
+Install it as a dev dependency, so that CI uses a pinned version:
+
+    yarn add --dev @akiflow/licenses-verifier
+
+or
+
+    npm install --save-dev @akiflow/licenses-verifier
+
+List the licenses your lawyers approved, in your `package.json`:
 
     "whitelistedLicenses": [
         "MIT",
-        "Apache-2.0"
+        "Apache-2.0",
+        "ISC",
+        "BSD-3-Clause"
     ]
 
-If a dependency is not whitelisted, it will be reported as a problem.
+Add it to your scripts, and to CI:
 
-If no whitelist is provided, a warning will be shown.
+    "scripts": {
+        "check-licenses": "licenses-verifier --production"
+    }
 
-If any dependency has no license, it will be reported as a problem.
+That is the whole setup. Everything below is reference material.
+
+## How it works
+
+Licenses Verifier lists every dependency of your project — production and development, recursively — determines the license of each one, and checks it against the `whitelistedLicenses` array of your `package.json`.
+
+A dependency whose license is not on that list is reported as a problem. So is a dependency whose license cannot be determined at all. If no whitelist is provided, a warning is shown instead.
 
 ### Whitelisting a package
 
-Sometimes the decision is about one package rather than about a license: a proprietary dependency you have a contract for, a package whose license cannot be determined but that you have reviewed. Add it to the `whitelistedPackages` array in `package.json` and it is accepted whatever its license.
-
-Example:
+Sometimes the decision is about one package rather than about a license: a proprietary dependency you have a contract for, or a package whose license cannot be determined but that you have reviewed. Add it to the `whitelistedPackages` array in `package.json` and it is accepted whatever its license.
 
     "whitelistedPackages": [
         "@vendor/sdk@2.4.0",
@@ -83,23 +154,7 @@ Longer answer: you need to verify that the license allows you to use the depende
 
 For this reason we recommend that you consult with your lawyer before whitelisting a license. You should do so for each project you work on. We strongly suggest not to reuse the same license whitelist in multiple projects without prior consultation with your lawyer.
 
-## How to use it?
-
-### Installation
-
-As a dev dependency of your project (recommended, so that CI uses a pinned version):
-
-    yarn add --dev @akiflow/licenses-verifier
-
-or
-
-    npm install --save-dev @akiflow/licenses-verifier
-
-Globally:
-
-    yarn global add @akiflow/licenses-verifier
-
-### Usage
+## Usage
 
     yarn licenses-verifier
 
@@ -107,7 +162,11 @@ or, having added `"licenses": "licenses-verifier"` to the `scripts` of your `pac
 
     yarn licenses
 
-#### Options
+It can also be installed globally:
+
+    yarn global add @akiflow/licenses-verifier
+
+### Options
 
 All parameters are optional.
 
@@ -153,7 +212,7 @@ recoverable; missing one is not.
 
 Paths may use forward slashes on every platform, Windows included.
 
-#### Exit codes
+### Exit codes
 
 | Code | Meaning |
 | ---- | ------- |
