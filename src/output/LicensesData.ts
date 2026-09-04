@@ -12,12 +12,30 @@ const INTERFACE_AS_STRING = `export interface IAppPackages {
   url?: string
   notice?: string
   noticeFile?: string
+  private?: boolean
 }\n\n`
 
 /** Object keys that can be written unquoted in a JS/TS object literal. */
 const SAFE_IDENTIFIER = /^[A-Za-z_$][A-Za-z0-9_$]*$/
 
 export class LicensesData {
+  /**
+   * Writes every package and its license as a JSON array, i.e. the exact same
+   * data as `exportLicensesToTsOrJsFile` without the JS/TS wrapper.
+   *
+   * This is the file an application ships to show its third party licenses, so
+   * each entry has to be self contained: name, license identifier and the full
+   * text of the license.
+   */
+  public static saveToJsonAllPackages (
+    packagesArray: Array<IModuleInfo>,
+    outputPathAndFileName: string
+  ): void {
+    const { folder, filename } = FsHelpers.stringToFolderFilenameAndExtension(outputPathAndFileName)
+    const json = JSON.stringify(packagesArray, null, 2)
+    FsHelpers.writeFileSyncInDir(folder, filename || 'app-packages.json', `${json}\n`)
+  }
+
   public static saveToJsonAllPackagesUsedGroupedByLicense (
     packagesByLicense: IPackagesByLicense,
     outputPathAndFileName: string

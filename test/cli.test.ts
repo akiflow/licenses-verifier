@@ -129,11 +129,13 @@ describe('main', () => {
         `--projectPath=${dir}`,
         `--tsOrJsFile=${join(dir, 'out', 'licensesData.ts')}`,
         `--outLicensesDir=${join(dir, 'out')}`,
-        `--json=${join(dir, 'out', 'byLicense.json')}`
+        `--json=${join(dir, 'out', 'app-packages.json')}`,
+        `--jsonGroupedByLicense=${join(dir, 'out', 'byLicense.json')}`
       ]))
       expect(result).toBe(EXIT_OK)
       expect(existsSync(join(dir, 'out', 'licensesData.ts'))).toBe(true)
       expect(existsSync(join(dir, 'out', 'licenses', 'MIT.txt'))).toBe(true)
+      expect(existsSync(join(dir, 'out', 'app-packages.json'))).toBe(true)
       expect(existsSync(join(dir, 'out', 'byLicense.json'))).toBe(true)
     })
   })

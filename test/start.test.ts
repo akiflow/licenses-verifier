@@ -4,6 +4,9 @@ import { join } from 'path'
 import { start } from '../src/index'
 import * as h from './helpers'
 
+/** The kind of text a proprietary package ships: valid for that package only. */
+const PROPRIETARY_TEXT = 'Copyright (c) Akiflow Inc.\n\nAll rights reserved.\n'
+
 /** A project with a whitelist, one MIT dependency shipping its license, and one not. */
 function project (dir: string, manifest: Record<string, unknown> = {}) {
   h.writeProject(dir, {
@@ -88,6 +91,88 @@ describe('start', () => {
     })
   })
 
+  test('does not lend the text of one proprietary package to another', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT', 'UNLICENSED']
+      })
+      // The project ships its own license, so it is not itself part of what
+      // the assertions below are about.
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      // Both declare UNLICENSED, which is not a license but the absence of one:
+      // they share an identifier and no terms whatsoever. Copying the text of
+      // the first onto the second would publish a grant that was never made.
+      h.writePackage(dir, 'ships-terms', { license: 'UNLICENSED' }, { LICENSE: PROPRIETARY_TEXT })
+      h.writePackage(dir, 'ships-nothing', { license: 'UNLICENSED' })
+
+      const target = join(dir, 'out', 'app-packages.json')
+      const { result, out } = h.captureConsole(() => start({ projectPath: dir, outputJsonFile: target }))
+
+      expect(out).not.toContain('Using license from other package: UNLICENSED')
+      expect(result?.packagesWithoutLicense).toEqual(['ships-nothing@1.0.0'])
+
+      const packages = JSON.parse(readFileSync(target, 'utf8'))
+      const byName = (name: string) => packages.find((p: { name: string }) => p.name === name)
+      expect(byName('ships-terms@1.0.0').license).toBe(PROPRIETARY_TEXT)
+      expect(byName('ships-nothing@1.0.0').license).toBe('')
+    })
+  })
+
+  test('does not lend a text across UNKNOWN either', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT']
+      })
+      // The project ships its own license, so it is not itself part of what
+      // the assertions below are about.
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      // An unrecognisable license file leaves the identifier UNKNOWN while
+      // keeping the text: that text belongs to that package alone.
+      h.writePackage(dir, 'odd-terms', {}, { LICENSE: 'Do whatever, signed Bob.' })
+      h.writePackage(dir, 'no-terms', {})
+
+      const { result, out } = h.captureConsole(() => start({ projectPath: dir }))
+
+      expect(out).not.toContain('Using license from other package: UNKNOWN')
+      expect(result?.packagesWithoutLicense).toEqual(['no-terms@1.0.0'])
+    })
+  })
+
+  test('does not lend a text across SEE LICENSE IN, which points at one file', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT', 'SEE LICENSE IN LICENSE']
+      })
+      // The project ships its own license, so it is not itself part of what
+      // the assertions below are about.
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'has-file', { license: 'SEE LICENSE IN LICENSE' }, { LICENSE: PROPRIETARY_TEXT })
+      h.writePackage(dir, 'has-no-file', { license: 'SEE LICENSE IN LICENSE' })
+
+      const { result, out } = h.captureConsole(() => start({ projectPath: dir }))
+
+      expect(out).not.toContain('Using license from other package')
+      expect(result?.packagesWithoutLicense).toEqual(['has-no-file@1.0.0'])
+    })
+  })
+
+  test('writes no license file for an identifier that names no license', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT', 'UNLICENSED']
+      })
+      h.writePackage(dir, 'with-text', { license: 'MIT' }, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'proprietary', { license: 'UNLICENSED' }, { LICENSE: PROPRIETARY_TEXT })
+
+      h.captureConsole(() => start({ projectPath: dir, outLicensesDir: join(dir, 'out') }))
+
+      // An `UNLICENSED.txt` holding the terms of one arbitrary package would
+      // read, to whoever reviews the export, as the terms of all of them.
+      expect(existsSync(join(dir, 'out', 'licenses', 'MIT.txt'))).toBe(true)
+      expect(existsSync(join(dir, 'out', 'licenses', 'UNLICENSED.txt'))).toBe(false)
+    })
+  })
+
   test('reports a package whose license text cannot be found anywhere', () => {
     h.withTempDir(dir => {
       h.writeProject(dir, { name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT', 'ISC'] })
@@ -127,13 +212,50 @@ describe('start', () => {
     })
   })
 
+  test('writes every package with its license as a JSON array when asked', () => {
+    h.withTempDir(dir => {
+      project(dir)
+      const target = join(dir, 'out', 'app-packages.json')
+      h.captureConsole(() => start({ projectPath: dir, outputJsonFile: target }))
+      const packages = JSON.parse(readFileSync(target, 'utf8'))
+      // The same shape as the `.ts`/`.js` output: an array of self contained
+      // entries, which is what an application ships to show its licenses.
+      expect(Array.isArray(packages)).toBe(true)
+      expect(packages.map((p: { name: string }) => p.name)).toEqual([
+        'app@1.0.0', 'isc-dep@1.0.0', 'with-text@1.0.0'
+      ])
+      expect(packages[1]).toMatchObject({
+        name: 'isc-dep@1.0.0',
+        licenses: 'ISC',
+        license: h.ISC_TEXT
+      })
+      // Internal fields must never reach the output.
+      expect(packages[1].path).toBeUndefined()
+      expect(packages[1].licenseFile).toBeUndefined()
+    })
+  })
+
+  test('marks a private package as private in the JSON output', () => {
+    h.withTempDir(dir => {
+      project(dir)
+      h.writePackage(dir, 'internal', { license: 'MIT', private: true }, { LICENSE: h.MIT_TEXT })
+      const target = join(dir, 'out', 'app-packages.json')
+      h.captureConsole(() => start({ projectPath: dir, outputJsonFile: target }))
+      const packages = JSON.parse(readFileSync(target, 'utf8'))
+      const internal = packages.find((p: { name: string }) => p.name === 'internal@1.0.0')
+      expect(internal.private).toBe(true)
+      const published = packages.find((p: { name: string }) => p.name === 'with-text@1.0.0')
+      expect(published.private).toBeUndefined()
+    })
+  })
+
   test('writes the packages grouped by license when asked', () => {
     h.withTempDir(dir => {
       project(dir)
       const target = join(dir, 'out', 'byLicense.json')
-      h.captureConsole(() => start({ projectPath: dir, outputJsonFile: target }))
+      h.captureConsole(() => start({ projectPath: dir, outputGroupedJsonFile: target }))
       const grouped = JSON.parse(readFileSync(target, 'utf8'))
-      expect(grouped.MIT.sort()).toEqual(['app@1.0.0', 'with-text@1.0.0'])
+      expect(grouped.MIT).toEqual(['app@1.0.0', 'with-text@1.0.0'])
       expect(grouped.ISC).toEqual(['isc-dep@1.0.0'])
     })
   })
@@ -147,17 +269,19 @@ describe('start', () => {
     })
   })
 
-  test('writes all three outputs at once', () => {
+  test('writes all the outputs at once', () => {
     h.withTempDir(dir => {
       project(dir)
       h.captureConsole(() => start({
         projectPath: dir,
         outputTsOrJsFile: join(dir, 'out', 'licensesData.ts'),
         outLicensesDir: join(dir, 'out'),
-        outputJsonFile: join(dir, 'out', 'byLicense.json')
+        outputJsonFile: join(dir, 'out', 'app-packages.json'),
+        outputGroupedJsonFile: join(dir, 'out', 'byLicense.json')
       }))
       expect(existsSync(join(dir, 'out', 'licensesData.ts'))).toBe(true)
       expect(existsSync(join(dir, 'out', 'licenses', 'MIT.txt'))).toBe(true)
+      expect(existsSync(join(dir, 'out', 'app-packages.json'))).toBe(true)
       expect(existsSync(join(dir, 'out', 'byLicense.json'))).toBe(true)
     })
   })
@@ -167,7 +291,7 @@ describe('start', () => {
       h.writeProject(dir, { name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT'] })
       h.writePackage(dir, 'mystery')
       const target = join(dir, 'out', 'byLicense.json')
-      const { result } = h.captureConsole(() => start({ projectPath: dir, outputJsonFile: target }))
+      const { result } = h.captureConsole(() => start({ projectPath: dir, outputGroupedJsonFile: target }))
       expect(JSON.parse(readFileSync(target, 'utf8')).UNKNOWN).toEqual(['mystery@1.0.0'])
       expect(result?.passed).toBe(false)
     })
@@ -187,7 +311,7 @@ describe('start', () => {
       h.writePackage(dir, 'dev-dep', { license: 'ISC' }, { LICENSE: h.ISC_TEXT })
 
       const production = h.captureConsole(() => start({
-        projectPath: dir, production: true, outputJsonFile: join(dir, 'prod.json')
+        projectPath: dir, production: true, outputGroupedJsonFile: join(dir, 'prod.json')
       }))
       expect(production.result?.totalPackages).toBe(2)
       expect(JSON.parse(readFileSync(join(dir, 'prod.json'), 'utf8'))).toEqual({

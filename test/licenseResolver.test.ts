@@ -6,6 +6,7 @@ import {
   findLicenseFile,
   findNotice,
   findReadmeFile,
+  namesAnActualLicense,
   resolveLicense
 } from '../src/input/licenseResolver'
 import * as h from './helpers'
@@ -238,5 +239,37 @@ describe('resolveLicense', () => {
 
   test('leaves the notice undefined when the package ships none', () => {
     expect(resolve({ LICENSE: h.MIT_TEXT }, { license: 'MIT' }).notice).toBeUndefined()
+  })
+})
+
+describe('namesAnActualLicense', () => {
+  test('accepts an identifier that names a license', () => {
+    for (const id of ['MIT', 'Apache-2.0', '0BSD', '(MIT OR CC0-1.0)', 'Unlicense']) {
+      expect(namesAnActualLicense(id)).toBe(true)
+    }
+  })
+
+  test('accepts an identifier that was inferred from the license text', () => {
+    // The `*` says how we found out, not which license it is.
+    expect(namesAnActualLicense('MIT*')).toBe(true)
+  })
+
+  test('rejects the placeholders that name no license', () => {
+    // Nothing can be shared between two packages carrying one of these.
+    expect(namesAnActualLicense('UNKNOWN')).toBe(false)
+    expect(namesAnActualLicense('UNLICENSED')).toBe(false)
+    expect(namesAnActualLicense('SEE LICENSE IN LICENSE')).toBe(false)
+    expect(namesAnActualLicense('SEE LICENSE IN ./terms/EULA.md')).toBe(false)
+    expect(namesAnActualLicense('')).toBe(false)
+  })
+
+  test('rejects a placeholder however it was written', () => {
+    expect(namesAnActualLicense('  unlicensed  ')).toBe(false)
+    expect(namesAnActualLicense('See LICENSE in EULA.txt')).toBe(false)
+  })
+
+  test('does not reject a real license whose name merely starts alike', () => {
+    // `Unlicense` is a public domain dedication, not npm's `UNLICENSED`.
+    expect(namesAnActualLicense('Unlicense')).toBe(true)
   })
 })

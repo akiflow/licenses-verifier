@@ -136,13 +136,13 @@ describe('allLicensesAreWithelistedInPackageDotJson', () => {
 
   test('suggests the options that would explain the problem', () => {
     const { out } = verify([pkg('a@1', 'GPL-3.0')], ['MIT'])
-    expect(out).toContain('--json=')
+    expect(out).toContain('--jsonGroupedByLicense=')
     expect(out).toContain('--outLicensesDir=')
   })
 
   test('does not suggest an option that was already given', () => {
     const { out } = verify([pkg('a@1', 'GPL-3.0')], ['MIT'], { json: true, licensesDir: true })
-    expect(out).not.toContain('--json=')
+    expect(out).not.toContain('--jsonGroupedByLicense=')
     expect(out).not.toContain('--outLicensesDir=')
     expect(out).toContain('support of an attorney')
   })

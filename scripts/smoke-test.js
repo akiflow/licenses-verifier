@@ -51,8 +51,12 @@ function verifyWith (packageManager, tarball) {
       whitelistedLicenses: ['MIT']
     }, null, 2))
 
+    // Yarn caches a `file:` dependency under `name-version-<hash of the path>`,
+    // so a rebuilt tarball at the same path is served from the cache and the
+    // smoke test silently checks a stale build. A throwaway cache folder, wiped
+    // with the temporary project, makes the run test what was just packed.
     const install = packageManager === 'yarn'
-      ? ['add', `file:${tarball}`, '--no-lockfile', '--silent']
+      ? ['add', `file:${tarball}`, '--no-lockfile', '--silent', '--cache-folder', join(temp, '.yarn-cache')]
       : ['install', tarball, '--no-audit', '--no-fund']
     execFileSync(command(packageManager), install, { cwd: temp, stdio: ['ignore', 'ignore', 'inherit'] })
 
@@ -64,7 +68,7 @@ function verifyWith (packageManager, tarball) {
     }
 
     const binary = join(temp, 'node_modules', '.bin', isWindows ? 'licenses-verifier.cmd' : 'licenses-verifier')
-    const result = spawnSync(binary, ['--json=./out/byLicense.json'], {
+    const result = spawnSync(binary, ['--json=./out/app-packages.json', '--jsonGroupedByLicense=./out/byLicense.json'], {
       cwd: temp,
       encoding: 'utf8',
       shell: isWindows

@@ -192,6 +192,34 @@ describe('saveAllLicencesToTxtFile', () => {
   })
 })
 
+describe('saveToJsonAllPackages', () => {
+  test('writes the packages as a JSON array, creating the directories', () => {
+    h.withTempDir(dir => {
+      const target = join(dir, 'deep', 'nested', 'app-packages.json')
+      LicensesData.saveToJsonAllPackages([
+        { name: 'a@1.0.0', licenses: 'MIT', license: 'MIT text', repository: 'https://example.com/a' },
+        { name: 'b@2.0.0', licenses: 'ISC', license: 'ISC text', private: true }
+      ], target)
+      const content = readFileSync(target, 'utf8')
+      expect(JSON.parse(content)).toEqual([
+        { name: 'a@1.0.0', licenses: 'MIT', license: 'MIT text', repository: 'https://example.com/a' },
+        { name: 'b@2.0.0', licenses: 'ISC', license: 'ISC text', private: true }
+      ])
+      expect(content.endsWith('\n')).toBe(true)
+      expect(content.startsWith('[\n  {')).toBe(true)
+    })
+  })
+
+  test('falls back to app-packages.json when the path names no file', () => {
+    h.withTempDir(dir => {
+      h.withCwd(dir, () => {
+        LicensesData.saveToJsonAllPackages([], '')
+        expect(existsSync(join(dir, 'app-packages.json'))).toBe(true)
+      })
+    })
+  })
+})
+
 describe('saveToJsonAllPackagesUsedGroupedByLicense', () => {
   test('writes formatted JSON, creating the directories', () => {
     h.withTempDir(dir => {

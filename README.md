@@ -47,6 +47,8 @@ When no license can be determined at all, the package is reported as `UNKNOWN` a
 
 A package that declares a license but ships no copy of its text is reported with a warning, and the text of the same license found in another package is used in the exported data. This is a warning and not a failure: the license is known, it is only its text that is missing.
 
+Text is only shared between packages when the identifier names an actual license, i.e. one whose terms are the same for everyone using it. `UNKNOWN`, `UNLICENSED` and `SEE LICENSE IN <file>` are placeholders rather than licenses: two packages carrying one of them share an identifier and no terms at all. Such a package therefore keeps an empty license text and is reported as shipping none, and no file is written for it by `--outLicensesDir`. Lending it the text of another package would publish a license grant that was never made — typically an open source grant over someone's proprietary code.
+
 ### Which licenses can I whitelist?
 
 Short answer: ask your lawyers.
@@ -99,9 +101,15 @@ All parameters are optional.
         a third party, for example, an attorney to help you review the licenses.
 
     --json=<pathAndFilename>
-        the path and name of the file in which a list of all the packages used in the project,
+        the path and name of the file in which every package and its license will be saved, as a
+        JSON array. It holds exactly the same data as `--tsOrJsFile`, without the JS/TS wrapper:
+        this is the file an application fetches at runtime to show its third party licenses.
+        Also accepted as `--outputJsonFile` and `--jsonFile`.
+
+    --jsonGroupedByLicense=<pathAndFilename>
+        the path and name of the file in which the names of all the packages used in the project,
         grouped by license, will be saved. Useful to identify which packages are using which
-        licenses. Also accepted as `--outputJsonFile`.
+        licenses.
 
     --production
         Only check the dependencies that ship in production, i.e. everything reachable from
@@ -160,7 +168,17 @@ generated files are unchanged, with these differences:
   typo in a CI pipeline cannot quietly skip the check.
 - **A package that ships no license text no longer fails the check.** Only a package whose
   license cannot be determined at all does.
-- `--outputJsonFile` now works as documented; version 2 only accepted `--json`.
+- **The text of a license is no longer shared across `UNKNOWN`, `UNLICENSED` and
+  `SEE LICENSE IN <file>`.** Version 2 copied the text of one such package onto every other
+  package carrying the same placeholder, which published a license grant that was never made.
+- **`--json` now writes an array of packages**, the same data as `--tsOrJsFile` without the
+  JS/TS wrapper, so that an application can ship it and render it as is. The old grouping by
+  license moved to `--jsonGroupedByLicense`.
+- **The generated files are sorted by `name@version`**, so regenerating them shows only real
+  changes in a diff.
+- A package whose `package.json` is marked `"private": true` now carries `private: true` in the
+  generated files, so an application can leave its own internal packages out of the list it shows.
+- `--outputJsonFile` and `--jsonFile` now work as documented; version 2 only accepted `--json`.
 - The library entry point no longer runs the CLI as a side effect of being imported.
 - Requires Node 14 or later.
 

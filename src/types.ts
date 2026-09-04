@@ -17,6 +17,8 @@ export interface IModuleInfo {
   url?: string
   /** Content of the NOTICE file, when the package ships one */
   notice?: string
+  /** True when the package manifest is marked `"private": true` */
+  private?: boolean
   /** Absolute path of the license file. Stripped before being exported. */
   licenseFile?: string
   /** Absolute path of the package. Stripped before being exported. */
@@ -40,6 +42,7 @@ export interface ILicensesVerifierCliOptions {
   outputTsOrJsFile?: string
   outLicensesDir?: string
   outputJsonFile?: string
+  outputGroupedJsonFile?: string
   production?: boolean
   development?: boolean
 }

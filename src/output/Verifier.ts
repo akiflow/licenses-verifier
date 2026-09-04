@@ -1,9 +1,9 @@
 import { resolve } from 'path'
+import { UNKNOWN_LICENSE } from '../input/licenseResolver'
 import { IModuleInfo, IVerificationResult } from '../types'
 import { readManifest } from '../utils/manifest'
 
-/** Identifier used when neither the manifest nor any shipped file names a license. */
-export const UNKNOWN_LICENSE = 'UNKNOWN'
+export { UNKNOWN_LICENSE }
 
 export class Verifier {
   private licensesInPackageDotJson: Array<string> | null = null
@@ -113,7 +113,7 @@ export class Verifier {
       console.log(`\n  ❗ ${nonWhitelistedLicensesNumber} license${nonWhitelistedLicensesNumber === 1 ? ' is' : 's are'} not whitelisted in package.json.`)
       console.log(`  ❗ The non whitelisted licenses being used in this project are: "${this.nonWhitelistedLicensesFound.join('", "')}"`)
       if (!this.hasSetJsonPath) {
-        console.log('\n  ❗ To review what packages are using these licenses, pass the argument \'--json=[pathToDirectoryAndFileName]\'.')
+        console.log('\n  ❗ To review what packages are using these licenses, pass the argument \'--jsonGroupedByLicense=[pathToDirectoryAndFileName]\'.')
       }
       if (!this.hasSetOutLicensesDir) {
         console.log('  ❗ To export the licenses texts, pass the argument \'--outLicensesDir=[pathToDirectory]\'.')

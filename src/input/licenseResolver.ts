@@ -32,6 +32,30 @@ const NOTICE_FILE_PATTERNS: Array<RegExp> = [
 
 const README_PATTERN = /^readme(\.(txt|md|markdown|rst))?$/i
 
+/** Identifier used when neither the manifest nor any shipped file names a license. */
+export const UNKNOWN_LICENSE = 'UNKNOWN'
+
+/** Identifier npm defines for a package that grants no license at all. */
+export const UNLICENSED_LICENSE = 'UNLICENSED'
+
+/**
+ * True when the identifier names an actual license, i.e. one whose text is the
+ * same for every package that uses it.
+ *
+ * `UNKNOWN`, `UNLICENSED` and `SEE LICENSE IN <file>` are not licenses but
+ * placeholders: they say that the terms are undetermined, proprietary, or
+ * written in a file belonging to that one package. Two packages sharing such an
+ * identifier share nothing else, so the text of one is not the text of the
+ * other and must never be presented as such.
+ */
+export function namesAnActualLicense (id: string): boolean {
+  const normalized = id.replace(/\*$/, '').trim().toUpperCase()
+  if (!normalized || normalized === UNKNOWN_LICENSE || normalized === UNLICENSED_LICENSE) {
+    return false
+  }
+  return !normalized.startsWith('SEE LICENSE IN')
+}
+
 function findFirstMatch (dir: string, patterns: Array<RegExp>): string | null {
   const entries = FsHelpers.readDirSafe(dir).filter(entry => !entry.isDirectory)
   for (const pattern of patterns) {
@@ -163,7 +187,7 @@ export function resolveLicense (dir: string, manifest: IManifest): IResolvedLice
   }
 
   if (id === null) {
-    id = manifest.private === true ? 'UNLICENSED' : 'UNKNOWN'
+    id = manifest.private === true ? UNLICENSED_LICENSE : UNKNOWN_LICENSE
   }
 
   return {

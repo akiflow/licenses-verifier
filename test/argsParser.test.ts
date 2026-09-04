@@ -9,6 +9,7 @@ describe('argsParser', () => {
       outputTsOrJsFile: undefined,
       outLicensesDir: undefined,
       outputJsonFile: undefined,
+      outputGroupedJsonFile: undefined,
       production: undefined,
       development: undefined,
       help: false,
@@ -33,16 +34,19 @@ describe('argsParser', () => {
       '--projectPath=./p',
       '--tsOrJsFile=./out/licenses.ts',
       '--outLicensesDir=./out',
-      '--json=./out/by-license.json'
+      '--json=./out/app-packages.json',
+      '--jsonGroupedByLicense=./out/by-license.json'
     ])
     expect(args.projectPath).toBe('./p')
     expect(args.outputTsOrJsFile).toBe('./out/licenses.ts')
     expect(args.outLicensesDir).toBe('./out')
-    expect(args.outputJsonFile).toBe('./out/by-license.json')
+    expect(args.outputJsonFile).toBe('./out/app-packages.json')
+    expect(args.outputGroupedJsonFile).toBe('./out/by-license.json')
   })
 
-  test('accepts --outputJsonFile as an alias of --json, as the README documented', () => {
+  test('accepts --outputJsonFile and --jsonFile as aliases of --json', () => {
     expect(argsParser(['--outputJsonFile=a.json']).outputJsonFile).toBe('a.json')
+    expect(argsParser(['--jsonFile=a.json']).outputJsonFile).toBe('a.json')
     expect(argsParser(['--json=a.json']).outputJsonFile).toBe('a.json')
   })
 

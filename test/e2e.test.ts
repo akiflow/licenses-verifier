@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'bun:test'
 import { execFileSync, spawnSync } from 'child_process'
-import { existsSync } from 'fs'
+import { existsSync, readFileSync } from 'fs'
 import { join } from 'path'
 import * as h from './helpers'
 
@@ -57,12 +57,18 @@ describe.if(built && hasNode)('the built package under Node', () => {
       const { code } = runBinary([
         '--tsOrJsFile=./out/licensesData.ts',
         '--outLicensesDir=./out',
-        '--json=./out/byLicense.json'
+        '--json=./out/app-packages.json',
+        '--jsonGroupedByLicense=./out/byLicense.json'
       ], dir)
       expect(code).toBe(0)
       expect(existsSync(join(dir, 'out', 'licensesData.ts'))).toBe(true)
       expect(existsSync(join(dir, 'out', 'licenses', 'MIT.txt'))).toBe(true)
       expect(existsSync(join(dir, 'out', 'byLicense.json'))).toBe(true)
+
+      // `--json` writes the array an application ships, not the grouping.
+      const packages = JSON.parse(readFileSync(join(dir, 'out', 'app-packages.json'), 'utf8'))
+      expect(packages.map((p: { name: string }) => p.name)).toEqual(['app@1.0.0', 'dep@1.0.0'])
+      expect(packages[1].license).toBe(h.MIT_TEXT)
     })
   })
 

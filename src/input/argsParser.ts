@@ -32,10 +32,16 @@ const OPTIONS: Array<IOptionDefinition> = [
   },
   {
     name: 'json',
-    aliases: ['outputJsonFile'],
+    aliases: ['outputJsonFile', 'jsonFile'],
     type: 'string',
     placeholder: '<pathAndFilename>',
-    description: 'Write a JSON file listing all packages grouped by license.'
+    description: 'Write a JSON array with every package and its license, ready to be shipped with an app.'
+  },
+  {
+    name: 'jsonGroupedByLicense',
+    type: 'string',
+    placeholder: '<pathAndFilename>',
+    description: 'Write a JSON file listing the names of all packages, grouped by license.'
   },
   {
     name: 'production',
@@ -173,6 +179,7 @@ export function argsParser (argv: Array<string> = process.argv.slice(2)): IParse
     outputTsOrJsFile: asString('tsOrJsFile'),
     outLicensesDir: asString('outLicensesDir'),
     outputJsonFile: asString('json'),
+    outputGroupedJsonFile: asString('jsonGroupedByLicense'),
     production: asBoolean('production'),
     development: asBoolean('development'),
     help: asBoolean('help') === true,

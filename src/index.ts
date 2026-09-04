@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import { argsParser } from './input/argsParser'
 import { getLicenses } from './input/getLicenses'
+import { namesAnActualLicense } from './input/licenseResolver'
 import { LicensesData } from './output/LicensesData'
 import { Verifier } from './output/Verifier'
 import {
@@ -30,12 +31,17 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
   const packagesByLicense: IPackagesByLicense = {}
   const packagesArray: Array<IModuleInfo> = []
 
-  // First pass: index every license text we could find, so that a package
+  // First pass: index the text of every license we could find, so that a package
   // without its own license file can borrow the text of the same license from
   // another package regardless of the order they are visited in.
+  //
+  // Only real licenses are indexed. `UNKNOWN`, `UNLICENSED` and
+  // `SEE LICENSE IN <file>` are placeholders, not licenses: two packages sharing
+  // one of them share no terms, so lending the text of one to the other would
+  // publish a license grant that was never made.
   for (const packageName in appPackages) {
     const packageData = appPackages[packageName]
-    if (packageData.license && !licenses[packageData.licenses]) {
+    if (packageData.license && !licenses[packageData.licenses] && namesAnActualLicense(packageData.licenses)) {
       licenses[packageData.licenses] = packageData.license
     }
   }
@@ -65,7 +71,15 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
     packagesArray.push(packageData)
   }
 
-  const verifier = new Verifier(args.projectPath, packagesArray, !!args.outLicensesDir, !!args.outputJsonFile)
+  // Sorted by `name@version` so that regenerating the outputs on a different
+  // machine produces the same file, and a diff only shows real changes.
+  packagesArray.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0))
+  for (const license in packagesByLicense) {
+    packagesByLicense[license].sort()
+  }
+
+  const hasJsonOutput = !!args.outputJsonFile || !!args.outputGroupedJsonFile
+  const verifier = new Verifier(args.projectPath, packagesArray, !!args.outLicensesDir, hasJsonOutput)
   verifier.allPackagesHaveLicense(packagesWithoutLicense)
   verifier.noPackageHasAnUnknownLicense()
   verifier.allLicensesAreWithelistedInPackageDotJson()
@@ -79,7 +93,11 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
   }
 
   if (args.outputJsonFile) {
-    LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, args.outputJsonFile)
+    LicensesData.saveToJsonAllPackages(packagesArray, args.outputJsonFile)
+  }
+
+  if (args.outputGroupedJsonFile) {
+    LicensesData.saveToJsonAllPackagesUsedGroupedByLicense(packagesByLicense, args.outputGroupedJsonFile)
   }
 
   return verifier.result()

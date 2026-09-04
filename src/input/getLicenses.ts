@@ -79,6 +79,9 @@ function toModuleInfo (pkg: IInstalledPackage): IModuleInfo {
   if (license.notice) {
     info.notice = license.notice
   }
+  if (manifest.private === true) {
+    info.private = true
+  }
   if (license.licenseFile) {
     info.licenseFile = license.licenseFile
   }
