@@ -2,17 +2,10 @@ import { resolve } from 'path'
 import { UNKNOWN_LICENSE } from '../input/licenseResolver'
 import { IModuleInfo, IVerificationResult } from '../types'
 import { readManifest } from '../utils/manifest'
+import { listNamesPackage, readPackageLists } from '../utils/packageLists'
 import { renderDependencyTree } from './dependencyTree'
 
 export { UNKNOWN_LICENSE }
-
-/** Splits `@scope/name@1.2.3` into its name and its version. */
-function splitPackageKey (key: string): { name: string, version: string } {
-  const at = key.lastIndexOf('@')
-  return at > 0
-    ? { name: key.slice(0, at), version: key.slice(at + 1) }
-    : { name: key, version: '' }
-}
 
 export class Verifier {
   private licensesInPackageDotJson: Array<string> | null = null
@@ -130,13 +123,10 @@ export class Verifier {
 
     const projectDir = resolve(process.cwd(), this.inputPath)
     const manifest = readManifest(projectDir)
-    const onlyStrings = (value: unknown): Array<string> => Array.isArray(value)
-      ? value.filter((entry): entry is string => typeof entry === 'string')
-      : []
+    const lists = readPackageLists(manifest)
 
-    const licenses = manifest && manifest.whitelistedLicenses
-    this.licensesInPackageDotJson = Array.isArray(licenses) ? onlyStrings(licenses) : null
-    this.packagesInPackageDotJson = onlyStrings(manifest && manifest.whitelistedPackages)
+    this.licensesInPackageDotJson = lists.licenses
+    this.packagesInPackageDotJson = lists.whitelisted
     this.projectKey = manifest && typeof manifest.name === 'string' && manifest.name
       ? `${manifest.name}@${typeof manifest.version === 'string' ? manifest.version : '0.0.0'}`
       : undefined
@@ -165,24 +155,18 @@ export class Verifier {
    * dependency needs.
    */
   private isWhitelistedPackage (packageKey: string): boolean {
-    if (this.packagesInPackageDotJson.length === 0) {
-      return false
-    }
-    if (this.packagesInPackageDotJson.includes(packageKey)) {
-      return true
-    }
-    return this.packagesInPackageDotJson.includes(splitPackageKey(packageKey).name)
+    return listNamesPackage(this.packagesInPackageDotJson, packageKey)
   }
 
+  /**
+   * Kept in the result for a caller that wants to know, but deliberately not
+   * printed: a whitelisted package is a decision already taken, and repeating
+   * it on every run is noise between the reader and the real findings.
+   */
   private collectWhitelistedPackages (): void {
     this.whitelistedPackagesFound = this.packagesArray
       .filter(p => this.isWhitelistedPackage(p.name))
       .map(p => p.name)
-
-    const count = this.whitelistedPackagesFound.length
-    if (count > 0) {
-      console.log(`\n  ⚠ ${count} package${count === 1 ? ' is' : 's are'} whitelisted in package.json and ${count === 1 ? 'was' : 'were'} not checked: ${this.whitelistedPackagesFound.join(', ')}`)
-    }
   }
 
   private checkIfAnyLicenseIsNotWhitelisted (): void {

@@ -274,7 +274,9 @@ describe('whitelistedPackages', () => {
     expect(result.passed).toBe(true)
     expect(result.nonWhitelistedLicenses).toEqual([])
     expect(result.whitelistedPackages).toEqual(['gpl-dep@1.0.0'])
-    expect(out).toContain('⚠ 1 package is whitelisted in package.json and was not checked: gpl-dep@1.0.0')
+    // Reported in the result, but never printed: the decision is already taken.
+    expect(out).not.toContain('gpl-dep')
+    expect(out).not.toContain('whitelisted in package.json and')
   })
 
   test('accepts a package whose license could not be determined at all', () => {

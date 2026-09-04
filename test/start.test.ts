@@ -190,6 +190,100 @@ describe('start', () => {
     })
   })
 
+  test('leaves out an excluded package and everything only it required', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app',
+        version: '1.0.0',
+        license: 'MIT',
+        whitelistedLicenses: ['MIT'],
+        dependencies: { toolkit: '1', keeper: '1' },
+        excludedPackages: ['toolkit']
+      })
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'toolkit', { license: 'GPL-3.0', dependencies: { 'only-child': '1', shared: '1' } }, { LICENSE: h.GPL3_TEXT })
+      h.writePackage(dir, 'only-child', { license: 'GPL-3.0' }, { LICENSE: h.GPL3_TEXT })
+      // Required by the excluded package and by one that stays, so it stays.
+      h.writePackage(dir, 'shared', { license: 'MIT' }, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'keeper', { license: 'MIT', dependencies: { shared: '1' } }, { LICENSE: h.MIT_TEXT })
+
+      const target = join(dir, 'out', 'app-packages.json')
+      const { out, result } = h.captureConsole(() => start({ projectPath: dir, outputJsonFile: target }))
+
+      const names = JSON.parse(readFileSync(target, 'utf8')).map((p: { name: string }) => p.name)
+      expect(names.sort()).toEqual(['app@1.0.0', 'keeper@1.0.0', 'shared@1.0.0'])
+      // Not a word about either, and the GPL they carried is gone with them.
+      expect(out).not.toContain('toolkit')
+      expect(out).not.toContain('only-child')
+      expect(out).not.toContain('GPL-3.0')
+      expect(result?.passed).toBe(true)
+      expect(result?.totalPackages).toBe(3)
+    })
+  })
+
+  test('excludes a package under --production and --development alike', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app',
+        version: '1.0.0',
+        license: 'MIT',
+        whitelistedLicenses: ['MIT'],
+        dependencies: { 'prod-dep': '1' },
+        devDependencies: { 'dev-dep': '1' },
+        excludedPackages: ['prod-dep', 'dev-dep']
+      })
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'prod-dep', { license: 'GPL-3.0' }, { LICENSE: h.GPL3_TEXT })
+      h.writePackage(dir, 'dev-dep', { license: 'GPL-3.0' }, { LICENSE: h.GPL3_TEXT })
+
+      const production = h.captureConsole(() => start({ projectPath: dir, production: true }))
+      expect(production.result?.totalPackages).toBe(1)
+      expect(production.result?.passed).toBe(true)
+
+      // Only the project itself is left in either mode.
+      const development = h.captureConsole(() => start({ projectPath: dir, development: true }))
+      expect(development.result?.totalPackages).toBe(1)
+      expect(development.result?.passed).toBe(true)
+    })
+  })
+
+  test('excludes one version of a package, or every version of it', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app',
+        version: '1.0.0',
+        license: 'MIT',
+        whitelistedLicenses: ['MIT'],
+        dependencies: { pinned: '1', 'any-version': '1' },
+        excludedPackages: ['pinned@1.0.0', 'any-version']
+      })
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'pinned', { license: 'MIT' }, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'any-version', { version: '9.9.9', license: 'MIT' } as never, { LICENSE: h.MIT_TEXT })
+
+      const { result } = h.captureConsole(() => start({ projectPath: dir }))
+      expect(result?.totalPackages).toBe(1)
+    })
+  })
+
+  test('keeps a package excluded by name but installed at another version', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app',
+        version: '1.0.0',
+        license: 'MIT',
+        whitelistedLicenses: ['MIT'],
+        dependencies: { pinned: '1' },
+        excludedPackages: ['pinned@2.0.0']
+      })
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'pinned', { license: 'MIT' }, { LICENSE: h.MIT_TEXT })
+
+      const { result } = h.captureConsole(() => start({ projectPath: dir }))
+      expect(result?.totalPackages).toBe(2)
+    })
+  })
+
   test('shows why a package with a non whitelisted license is installed', () => {
     h.withTempDir(dir => {
       h.writeProject(dir, {
@@ -230,7 +324,66 @@ describe('start', () => {
       expect(result?.nonWhitelistedLicenses).toEqual([])
       expect(result?.packagesWithUnknownLicense).toEqual([])
       expect(result?.whitelistedPackages.sort()).toEqual(['copyleft@1.0.0', 'mystery@1.0.0'])
-      expect(out).toContain('2 packages are whitelisted in package.json and were not checked')
+      // Not one line about either of them: the whitelist has to actually silence.
+      expect(out).not.toContain('copyleft@1.0.0')
+      expect(out).not.toContain('mystery@1.0.0')
+    })
+  })
+
+  test('says nothing at all about a whitelisted package with no license text', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app',
+        version: '1.0.0',
+        license: 'MIT',
+        whitelistedLicenses: ['MIT'],
+        whitelistedPackages: ['@vendor/sdk']
+      })
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      // Proprietary, ships no license file at all: exactly the package a
+      // whitelist exists for.
+      h.writePackage(dir, '@vendor/sdk', { license: 'UNLICENSED' })
+
+      const { out, result } = h.captureConsole(() => start({ projectPath: dir }))
+
+      expect(result?.passed).toBe(true)
+      expect(out).not.toContain('@vendor/sdk')
+      expect(out).not.toContain('No license file for package')
+      expect(result?.packagesWithoutLicense).toEqual([])
+      expect(out).toContain('✔')
+    })
+  })
+
+  test('keeps a whitelisted package in the generated files', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT'], whitelistedPackages: ['@vendor/sdk']
+      })
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, '@vendor/sdk', { license: 'UNLICENSED' })
+
+      const target = join(dir, 'out', 'app-packages.json')
+      h.captureConsole(() => start({ projectPath: dir, outputJsonFile: target }))
+
+      // Silenced in the report, but still shipped: it is a dependency of the
+      // application whatever anyone decided about its license.
+      const names = JSON.parse(readFileSync(target, 'utf8')).map((p: { name: string }) => p.name)
+      expect(names).toContain('@vendor/sdk@1.0.0')
+    })
+  })
+
+  test('whitelisting a bare name accepts whichever version is installed', () => {
+    h.withTempDir(dir => {
+      h.writeProject(dir, {
+        name: 'app', version: '1.0.0', license: 'MIT', whitelistedLicenses: ['MIT'], whitelistedPackages: ['copyleft']
+      })
+      h.writeFiles(dir, { LICENSE: h.MIT_TEXT })
+      h.writePackage(dir, 'copyleft', { version: '7.3.1', license: 'GPL-3.0' } as never, { LICENSE: h.GPL3_TEXT })
+
+      const { out, result } = h.captureConsole(() => start({ projectPath: dir }))
+      expect(result?.passed).toBe(true)
+      expect(result?.whitelistedPackages).toEqual(['copyleft@7.3.1'])
+      expect(out).not.toContain('copyleft')
     })
   })
 

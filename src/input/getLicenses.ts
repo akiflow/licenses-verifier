@@ -1,6 +1,7 @@
 import { resolve } from 'path'
 import { IModuleInfo, IModuleInfos, ILicensesVerifierCliOptions } from '../types'
 import { DependencyField, IManifest, parsePerson, parseRepository, readManifest } from '../utils/manifest'
+import { listNamesPackage, readPackageLists } from '../utils/packageLists'
 import { IInstalledPackage, collectInstalledPackages, collectReachablePackages } from './packageScanner'
 import { resolveLicense } from './licenseResolver'
 
@@ -17,6 +18,9 @@ import { resolveLicense } from './licenseResolver'
  *   `optionalDependencies`.
  * - `--development`: only what is reachable from `devDependencies` and *not*
  *   from the production dependencies.
+ *
+ * Whatever the flags, a package named by `excludedPackages` is left out, and so
+ * is everything that was only reachable through it.
  */
 function selectPackages (
   projectDir: string,
@@ -27,14 +31,16 @@ function selectPackages (
   const onlyProduction = !!args.production && !args.development
   const onlyDevelopment = !!args.development && !args.production
   const productionFields: Array<DependencyField> = ['dependencies', 'optionalDependencies']
+  const excluded = readPackageLists(projectManifest).excluded
+  const isExcluded = (packageKey: string): boolean => listNamesPackage(excluded, packageKey)
 
   if (onlyProduction) {
-    return Array.from(collectReachablePackages(projectDir, projectManifest, productionFields).values())
+    return Array.from(collectReachablePackages(projectDir, projectManifest, productionFields, isExcluded).values())
   }
 
   if (onlyDevelopment) {
-    const productionSet = collectReachablePackages(projectDir, projectManifest, productionFields)
-    const developmentSet = collectReachablePackages(projectDir, projectManifest, ['devDependencies'])
+    const productionSet = collectReachablePackages(projectDir, projectManifest, productionFields, isExcluded)
+    const developmentSet = collectReachablePackages(projectDir, projectManifest, ['devDependencies'], isExcluded)
     return Array.from(developmentSet.values()).filter(pkg => !productionSet.has(pkg.realDir))
   }
 
@@ -43,9 +49,21 @@ function selectPackages (
   // manifest walk still runs, to learn which package required which: a package
   // found only in `node_modules` has nothing depending on it.
   const reachableFields: Array<DependencyField> = ['dependencies', 'devDependencies', 'optionalDependencies']
-  const reachable = collectReachablePackages(projectDir, projectManifest, reachableFields)
-  const seen = new Set(installed.map(pkg => pkg.realDir))
-  const selected = installed.map(pkg => {
+  const reachable = collectReachablePackages(projectDir, projectManifest, reachableFields, isExcluded)
+
+  // Scanning `node_modules` finds the excluded subtree too, so an installed
+  // package is dropped when it is excluded itself, or when the manifest could
+  // only reach it through something excluded. One that the manifest never
+  // reached at all is kept: nothing claims it, so nothing can disown it either.
+  const reachedWithoutExclusions = excluded.length === 0
+    ? reachable
+    : collectReachablePackages(projectDir, projectManifest, reachableFields)
+  const keptInstalled = installed.filter(pkg => (
+    !isExcluded(pkg.key) && (reachable.has(pkg.realDir) || !reachedWithoutExclusions.has(pkg.realDir))
+  ))
+
+  const seen = new Set(keptInstalled.map(pkg => pkg.realDir))
+  const selected = keptInstalled.map(pkg => {
     const viaManifest = reachable.get(pkg.realDir)
     return viaManifest ? { ...pkg, requiredBy: viaManifest.requiredBy } : pkg
   })

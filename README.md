@@ -115,9 +115,26 @@ Sometimes the decision is about one package rather than about a license: a propr
         "some-package"
     ]
 
-`name@version` accepts that one version, so a version bump comes back for review. The bare `name` accepts every version of it. Whitelisted packages are listed in the report and left unchecked.
+`name@version` accepts that one version, so a version bump comes back for review. The bare `name` accepts every version of it.
 
-This is the only way to accept a package whose license is `UNKNOWN`: whitelisting the `UNKNOWN` identifier deliberately does not work, because it would also accept every future package the tool cannot make sense of.
+A whitelisted package produces **no output at all** — not an error, not a warning, not even a note that it ships no license text. The decision has been taken, and repeating it on every run would only stand between you and the findings that still need one. It is still included in the generated files: it is a dependency of your application whatever anyone decided about its license, and the "Third-party licenses" screen has to list it.
+
+This is also the only way to accept a package whose license is `UNKNOWN`: whitelisting the `UNKNOWN` identifier deliberately does not work, because it would also accept every future package the tool cannot make sense of.
+
+### Excluding a package
+
+A whitelist accepts a package. `excludedPackages` goes further: the package is left out of the report **and** of every generated file, as if it were not installed.
+
+    "excludedPackages": [
+        "@internal/build-tooling",
+        "some-package@1.2.3"
+    ]
+
+The same matching rules apply: `name@version` excludes that one version, a bare `name` excludes every version of it.
+
+Everything the excluded package brought in goes with it — but only what it alone brought in. A dependency that something else also requires stays in the report, under that other package, where it belongs.
+
+Use it for what is genuinely not part of what you ship: your own internal packages, a tool that never reaches production. Do not use it to make a license problem go away — `whitelistedPackages` is the honest way to say "reviewed and accepted", and it leaves a record.
 
 ### Why is this package here?
 
@@ -266,7 +283,10 @@ generated files are unchanged, with these differences:
 - **Packages that borrow the text of their license** from another package using the same license
   are now reported in a single line instead of one warning each.
 - **A non whitelisted license is now reported with the dependency tree** of the packages using it.
-- **Packages can be whitelisted** through `whitelistedPackages` in `package.json`.
+- **Packages can be whitelisted** through `whitelistedPackages` in `package.json`. A whitelisted
+  package produces no output at all, while still appearing in the generated files.
+- **Packages can be excluded** through `excludedPackages` in `package.json`, together with
+  everything only they required: those do not appear in the generated files either.
 - `--outputJsonFile` and `--jsonFile` now work as documented; version 2 only accepted `--json`.
 - The library entry point no longer runs the CLI as a side effect of being imported.
 - Requires Node 14 or later.

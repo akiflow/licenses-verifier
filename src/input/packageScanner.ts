@@ -137,11 +137,16 @@ export function resolveDependencyDir (fromDir: string, dependencyName: string): 
  * Transitive dependencies are followed through `dependencies` and
  * `optionalDependencies` only: `devDependencies` of a dependency are not
  * installed, and `peerDependencies` are satisfied by whoever depends on them.
+ *
+ * `isExcluded` prunes the walk: a package it names is left out and is not
+ * walked into, so its own dependencies are only reached if something else
+ * depends on them too.
  */
 export function collectReachablePackages (
   projectDir: string,
   projectManifest: IManifest | null,
-  rootFields: Array<DependencyField>
+  rootFields: Array<DependencyField>,
+  isExcluded: (packageKey: string) => boolean = () => false
 ): Map<string, IInstalledPackage> {
   const reachable = new Map<string, IInstalledPackage>()
   const transitiveFields: Array<DependencyField> = ['dependencies', 'optionalDependencies']
@@ -171,6 +176,9 @@ export function collectReachablePackages (
       }
       const version = typeof manifest.version === 'string' ? manifest.version : '0.0.0'
       const key = `${manifest.name}@${version}`
+      if (isExcluded(key)) {
+        continue
+      }
       reachable.set(realDir, {
         key,
         name: manifest.name,

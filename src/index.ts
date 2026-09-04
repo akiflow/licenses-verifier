@@ -4,6 +4,8 @@ import { getLicenses } from './input/getLicenses'
 import { namesAnActualLicense } from './input/licenseResolver'
 import { LicensesData } from './output/LicensesData'
 import { Verifier } from './output/Verifier'
+import { readManifest } from './utils/manifest'
+import { listNamesPackage, readPackageLists } from './utils/packageLists'
 import {
   ILicensesTexts,
   ILicensesVerifierCliOptions,
@@ -26,6 +28,12 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
     console.log('                     Try to pass a different directory with the arg \'--projectPath=[pathToDirectory]\'.\n')
     return null
   }
+
+  // A whitelisted package has already been reviewed and accepted: it belongs in
+  // the generated files like any other, but it must not produce a single line
+  // of report, or the whitelist would not have silenced anything.
+  const whitelistedPackages = readPackageLists(readManifest(projectFullPath)).whitelisted
+  const isWhitelisted = (packageKey: string): boolean => listNamesPackage(whitelistedPackages, packageKey)
 
   const licenses: ILicensesTexts = {}
   const packagesByLicense: IPackagesByLicense = {}
@@ -63,8 +71,10 @@ export function start (args: ILicensesVerifierCliOptions): IVerificationResult |
         // Reported as a single line by the verifier: there are routinely
         // hundreds of these, and none of them needs anything done about it.
         packageData.license = sharedLicenseText
-        packagesWithBorrowedLicense.push(packageName)
-      } else {
+        if (!isWhitelisted(packageData.name)) {
+          packagesWithBorrowedLicense.push(packageName)
+        }
+      } else if (!isWhitelisted(packageData.name)) {
         packagesWithoutLicense.push(packageName)
         console.log(`  ❗ No license file for package: ${packageName}. No license found for this package. ‼`)
       }

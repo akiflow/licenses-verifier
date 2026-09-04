@@ -207,6 +207,41 @@ describe('resolveDependencyDir', () => {
 })
 
 describe('collectReachablePackages', () => {
+  describe('isExcluded', () => {
+    test('leaves out the excluded package and does not walk into it', () => {
+      h.withTempDir(dir => {
+        const manifest = { name: 'root', version: '1.0.0', dependencies: { a: '1', keeper: '1' } }
+        h.writeProject(dir, manifest)
+        h.writePackage(dir, 'a', { dependencies: { 'only-child': '1' } })
+        h.writePackage(dir, 'only-child')
+        h.writePackage(dir, 'keeper')
+        const reachable = collectReachablePackages(dir, manifest, ['dependencies'], key => key === 'a@1.0.0')
+        expect(reachableKeys(reachable)).toEqual(['keeper@1.0.0'])
+      })
+    })
+
+    test('keeps a dependency of the excluded package that something else needs', () => {
+      h.withTempDir(dir => {
+        const manifest = { name: 'root', version: '1.0.0', dependencies: { a: '1', keeper: '1' } }
+        h.writeProject(dir, manifest)
+        h.writePackage(dir, 'a', { dependencies: { shared: '1' } })
+        h.writePackage(dir, 'keeper', { dependencies: { shared: '1' } })
+        h.writePackage(dir, 'shared')
+        const reachable = collectReachablePackages(dir, manifest, ['dependencies'], key => key === 'a@1.0.0')
+        expect(reachableKeys(reachable)).toEqual(['keeper@1.0.0', 'shared@1.0.0'])
+      })
+    })
+
+    test('excludes nothing when no predicate is given', () => {
+      h.withTempDir(dir => {
+        const manifest = { name: 'root', version: '1.0.0', dependencies: { a: '1' } }
+        h.writeProject(dir, manifest)
+        h.writePackage(dir, 'a')
+        expect(reachableKeys(collectReachablePackages(dir, manifest, ['dependencies']))).toEqual(['a@1.0.0'])
+      })
+    })
+  })
+
   test('follows dependencies transitively', () => {
     h.withTempDir(dir => {
       const manifest = { name: 'root', version: '1.0.0', dependencies: { a: '1' } }
